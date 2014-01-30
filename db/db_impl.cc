@@ -3,7 +3,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/db_impl.h"
-
+#include <sstream>
+//#include <fstream>
 #include <algorithm>
 #include <set>
 #include <string>
@@ -32,6 +33,8 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
+#include "rapidjson/document.h"
+
 
 namespace leveldb {
 
@@ -1150,6 +1153,70 @@ Status DBImpl::Put(const WriteOptions& o, const Slice& key, const Slice& val) {
   return DB::Put(o, key, val);
 }
 
+//Custom Put Overload Method for inserting values with key on secondary attribute
+Status DBImpl::Put(const WriteOptions& o, const Slice& val) {
+  
+ 
+  if(this->options_.PrimaryAtt.empty()) 
+      return Status::InvalidArgument("Primary Attribute Not Set");
+  rapidjson::Document docToParse;   
+  
+  docToParse.Parse<0>(val.ToString().c_str());   
+  const char* pKeyAtt = this->options_.PrimaryAtt.c_str();
+  
+  if(!docToParse.IsObject()||!docToParse.HasMember(pKeyAtt)||docToParse[pKeyAtt].IsNull())
+      return Status::InvalidArgument("Primary Attribute does not found");
+  
+  std::ostringstream pKey;
+  if(docToParse[pKeyAtt].IsNumber())
+  {
+        if(docToParse[pKeyAtt].IsUint64())
+        {
+            unsigned long long int tid = docToParse[pKeyAtt].GetUint64();
+            pKey<<tid;
+
+        }
+        else if (docToParse[pKeyAtt].IsInt64())
+        {
+            long long int tid = docToParse[pKeyAtt].GetInt64();
+            pKey<<tid;
+        }
+        else if (docToParse[pKeyAtt].IsDouble())
+        {
+            double tid = docToParse[pKeyAtt].GetDouble();
+            pKey<<tid;
+        }
+        
+        else if (docToParse[pKeyAtt].IsUint())
+        {
+            unsigned int tid = docToParse[pKeyAtt].GetUint();
+            pKey<<tid;
+        }
+        else if (docToParse[pKeyAtt].IsInt())
+        {
+            int tid = docToParse[pKeyAtt].GetInt();
+            pKey<<tid;             
+        }
+  }
+  else if (docToParse[pKeyAtt].IsString())
+  {
+        const char* tid = docToParse[pKeyAtt].GetString();
+        pKey<<tid;
+  }
+  else if(docToParse[pKeyAtt].IsBool())
+  {
+        bool tid = docToParse[pKeyAtt].GetBool();
+        pKey<<tid;
+  }
+  
+  Slice key = pKey.str();
+  //ofstream ofile("/Users/nakshikatha/Desktop/test codes/debug.txt");
+  //if(ofile)
+  //      ofile<<key.ToString()<<endl<<"asdasda";
+  return DB::Put(o,  key, val);
+}
+
+
 Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
   return DB::Delete(options, key);
 }
@@ -1418,6 +1485,22 @@ Status DB::Put(const WriteOptions& opt, const Slice& key, const Slice& value) {
   batch.Put(key, value);
   return Write(opt, &batch);
 }
+/*
+Status DB::Put(const WriteOptions& o, const Slice& val) {
+  
+   if(this->options.PrimaryAtt.empty()) 
+      return Status::InvalidArgument("Primary Attribute Not Set");
+  rapidjson::Document d;   
+  
+  d.Parse<0>(val.ToString().c_str());   
+  
+  if(!d.HasMember(this->options.PrimaryAtt.c_str()))
+      return Status::InvalidArgument("Primary Attribute does not found");
+  Slice key = d[this->options.PrimaryAtt.c_str()].GetString();
+  return DB::Put(o,  key , val);
+}
+
+*/
 
 Status DB::Delete(const WriteOptions& opt, const Slice& key) {
   WriteBatch batch;
@@ -1432,6 +1515,9 @@ Status DB::Open(const Options& options, const std::string& dbname,
   *dbptr = NULL;
 
   DBImpl* impl = new DBImpl(options, dbname);
+  //Add options in DB
+  //this->options = options;
+  
   impl->mutex_.Lock();
   VersionEdit edit;
   Status s = impl->Recover(&edit); // Handles create_if_missing, error_if_exists

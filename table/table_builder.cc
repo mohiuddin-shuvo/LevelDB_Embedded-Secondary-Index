@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "leveldb/table_builder.h"
-
+#include <sstream>
 #include <assert.h>
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
@@ -14,6 +14,7 @@
 #include "table/format.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
+#include "rapidjson/document.h"
 
 namespace leveldb {
 
@@ -29,7 +30,7 @@ struct TableBuilder::Rep {
   int64_t num_entries;
   bool closed;          // Either Finish() or Abandon() has been called.
   FilterBlockBuilder* filter_block;
-
+  FilterBlockBuilder* secondary_filter_block;
   // We do not emit the index entry for a block until we have seen the
   // first key for the next data block.  This allows us to use shorter
   // keys in the index block.  For example, consider a block boundary
@@ -55,6 +56,9 @@ struct TableBuilder::Rep {
         closed(false),
         filter_block(opt.filter_policy == NULL ? NULL
                      : new FilterBlockBuilder(opt.filter_policy)),
+        secondary_filter_block(opt.filter_policy == NULL ? NULL
+                     : new FilterBlockBuilder(opt.filter_policy)),
+             
         pending_index_entry(false) {
     index_block_options.block_restart_interval = 1;
   }
@@ -65,11 +69,15 @@ TableBuilder::TableBuilder(const Options& options, WritableFile* file)
   if (rep_->filter_block != NULL) {
     rep_->filter_block->StartBlock(0);
   }
+  if (rep_->secondary_filter_block != NULL) {
+    rep_->secondary_filter_block->StartBlock(0);
+  }
 }
 
 TableBuilder::~TableBuilder() {
   assert(rep_->closed);  // Catch errors where caller forgot to call Finish()
   delete rep_->filter_block;
+  delete rep_->secondary_filter_block;
   delete rep_;
 }
 
@@ -109,7 +117,65 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
   if (r->filter_block != NULL) {
     r->filter_block->AddKey(key);
   }
+if (r->secondary_filter_block != NULL) {
+    if(r->options.secondaryAtt.empty()) 
+      return;
+  rapidjson::Document docToParse; 
+  
+  docToParse.Parse<0>(value.ToString().c_str());   
+  
+  ///
+  const char* sKeyAtt = r->options.secondaryAtt.c_str();
+  
+  if(!docToParse.IsObject()||!docToParse.HasMember(sKeyAtt)||docToParse[sKeyAtt].IsNull())
+      return;
+  
+  std::ostringstream sKey;
+  if(docToParse[sKeyAtt].IsNumber())
+  {
+        if(docToParse[sKeyAtt].IsUint64())
+        {
+            unsigned long long int tid = docToParse[sKeyAtt].GetUint64();
+            sKey<<tid;
 
+        }
+        else if (docToParse[sKeyAtt].IsInt64())
+        {
+            long long int tid = docToParse[sKeyAtt].GetInt64();
+            sKey<<tid;
+        }
+        else if (docToParse[sKeyAtt].IsDouble())
+        {
+            double tid = docToParse[sKeyAtt].GetDouble();
+            sKey<<tid;
+        }
+        
+        else if (docToParse[sKeyAtt].IsUint())
+        {
+            unsigned int tid = docToParse[sKeyAtt].GetUint();
+            sKey<<tid;
+        }
+        else if (docToParse[sKeyAtt].IsInt())
+        {
+            int tid = docToParse[sKeyAtt].GetInt();
+            sKey<<tid;             
+        }
+  }
+  else if (docToParse[sKeyAtt].IsString())
+  {
+        const char* tid = docToParse[sKeyAtt].GetString();
+        sKey<<tid;
+  }
+  else if(docToParse[sKeyAtt].IsBool())
+  {
+        bool tid = docToParse[sKeyAtt].GetBool();
+        sKey<<tid;
+  }
+  
+  Slice Key = sKey.str();
+  
+  r->secondary_filter_block->AddKey(Key);
+}
   r->last_key.assign(key.data(), key.size());
   r->num_entries++;
   r->data_block.Add(key, value);
@@ -133,6 +199,10 @@ void TableBuilder::Flush() {
   }
   if (r->filter_block != NULL) {
     r->filter_block->StartBlock(r->offset);
+  }
+  if(r->secondary_filter_block!=NULL)
+  {
+    r->secondary_filter_block->StartBlock(r->offset);  
   }
 }
 
@@ -202,14 +272,20 @@ Status TableBuilder::Finish() {
   assert(!r->closed);
   r->closed = true;
 
-  BlockHandle filter_block_handle, metaindex_block_handle, index_block_handle;
+  BlockHandle filter_block_handle, secondary_filter_block_handle, metaindex_block_handle, index_block_handle;
 
   // Write filter block
   if (ok() && r->filter_block != NULL) {
     WriteRawBlock(r->filter_block->Finish(), kNoCompression,
                   &filter_block_handle);
   }
-
+  // Write Secondary Filer Block
+  if (ok() && r->secondary_filter_block != NULL) {
+    WriteRawBlock(r->secondary_filter_block->Finish(), kNoCompression,
+                  &secondary_filter_block_handle);
+  }
+  
+  
   // Write metaindex block
   if (ok()) {
     BlockBuilder meta_index_block(&r->options);
@@ -221,7 +297,14 @@ Status TableBuilder::Finish() {
       filter_block_handle.EncodeTo(&handle_encoding);
       meta_index_block.Add(key, handle_encoding);
     }
-
+    if (r->secondary_filter_block != NULL) {
+      // Add mapping from "filter.Name" to location of filter data
+      std::string key = "secondaryfilter.";
+      key.append(r->options.filter_policy->Name());
+      std::string handle_encoding;
+      secondary_filter_block_handle.EncodeTo(&handle_encoding);
+      meta_index_block.Add(key, handle_encoding);
+    }
     // TODO(postrelease): Add stats and other meta blocks
     WriteBlock(&meta_index_block, &metaindex_block_handle);
   }

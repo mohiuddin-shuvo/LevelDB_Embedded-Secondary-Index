@@ -6,6 +6,9 @@
 #define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 
 #include <stddef.h>
+#include <iostream>
+#include <vector>
+using namespace std;
 
 namespace leveldb {
 
@@ -136,6 +139,11 @@ struct Options {
   const FilterPolicy* filter_policy;
 
   // Create an Options object with default values for all fields.
+  string secondaryAtt;
+  string PrimaryAtt;
+  //////////////////Secondary Filter////////////
+  
+  
   Options();
 };
 
