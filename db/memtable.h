@@ -63,6 +63,10 @@ class MemTable {
   // Else, return false.
   bool Get(const LookupKey& key, std::string* value, Status* s);
 
+  //Overload Get mothod for returning the list of key,value pairs for query on sec key
+  bool Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, std::string secKey, int kNoOfOutputs);
+
+  
  private:
   ~MemTable();  // Private since only Unref() should be used to delete it
 

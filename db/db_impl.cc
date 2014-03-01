@@ -4,7 +4,7 @@
 
 #include "db/db_impl.h"
 #include <sstream>
-//#include <fstream>
+#include <fstream>
 #include <algorithm>
 #include <set>
 #include <string>
@@ -34,7 +34,8 @@
 #include "util/logging.h"
 #include "util/mutexlock.h"
 #include "rapidjson/document.h"
-
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
 namespace leveldb {
 
@@ -1118,6 +1119,61 @@ Status DBImpl::Get(const ReadOptions& options,
   current->Unref();
   return s;
 }
+//New Get method implementation for read on secondary key
+Status DBImpl::Get(const ReadOptions& options,
+                   const Slice& skey,
+                   std::vector<SKeyReturnVal>* value, int kNoOfOutputs) {
+    ofstream outputFile;
+    outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt");
+  Status s;
+  //outputFile<<"in\n";
+  MutexLock l(&mutex_);
+  SequenceNumber snapshot;
+  if (options.snapshot != NULL) {
+    snapshot = reinterpret_cast<const SnapshotImpl*>(options.snapshot)->number_;
+  } else {
+    snapshot = versions_->LastSequence();
+  }
+  //outputFile<<"in\n";
+  MemTable* mem = mem_;
+  MemTable* imm = imm_;
+  Version* current = versions_->current();
+  mem->Ref();
+  if (imm != NULL) imm->Ref();
+  current->Ref();
+
+  bool have_stat_update = false;
+  Version::GetStats stats;
+  //outputFile<<"in\n";
+  // Unlock while reading from files and memtables
+  {
+    mutex_.Unlock();
+    // First look in the memtable, then in the immutable memtable (if any).
+    //outputFile<<"in\n";
+    LookupKey lkey(skey, snapshot);
+    //outputFile<<"in\n";
+    if (mem->Get(lkey, value, &s,this->options_.secondaryAtt,kNoOfOutputs)) {
+      // Done
+    } else if (imm != NULL && imm->Get(lkey, value, &s,this->options_.secondaryAtt,kNoOfOutputs)) {
+      // Done
+    } else {
+      s = current->Get(options, lkey, value, &stats);
+      //have_stat_update = true;
+    }
+    //outputFile<<"in\n";
+    mutex_.Lock();
+    //outputFile<<"in\n";
+  }
+
+  /*if (have_stat_update && current->UpdateStats(stats)) {
+    MaybeScheduleCompaction();
+  }*/
+  mem->Unref();
+  if (imm != NULL) imm->Unref();
+  //current->Unref();
+  outputFile.close();
+  return s;
+}
 
 Iterator* DBImpl::NewIterator(const ReadOptions& options) {
   SequenceNumber latest_snapshot;
@@ -1210,10 +1266,14 @@ Status DBImpl::Put(const WriteOptions& o, const Slice& val) {
   }
   
   Slice key = pKey.str();
+  docToParse.RemoveMember(this->options_.PrimaryAtt.c_str());
+  rapidjson::StringBuffer strbuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+  docToParse.Accept(writer);
   //ofstream ofile("/Users/nakshikatha/Desktop/test codes/debug.txt");
   //if(ofile)
   //      ofile<<key.ToString()<<endl<<"asdasda";
-  return DB::Put(o,  key, val);
+  return DB::Put(o,  key, strbuf.GetString());
 }
 
 

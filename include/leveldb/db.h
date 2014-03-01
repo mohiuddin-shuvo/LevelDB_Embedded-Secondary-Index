@@ -38,6 +38,11 @@ struct Range {
   Range(const Slice& s, const Slice& l) : start(s), limit(l) { }
 };
 
+
+struct SKeyReturnVal {
+  Slice key;          // Included in the range
+  Slice value;          // Not included in the range
+};
 // A DB is a persistent ordered map from keys to values.
 // A DB is safe for concurrent access from multiple threads without
 // any external synchronization.
@@ -83,6 +88,13 @@ class DB {
   // May return some other Status on an error.
   virtual Status Get(const ReadOptions& options,
                      const Slice& key, std::string* value) = 0;
+  
+  //New Get method for query on secondary Key
+  virtual Status Get(const ReadOptions& options,
+                   const Slice& skey,
+                   std::vector<SKeyReturnVal>* value, int kNoOfOutputs) = 0;
+
+  
 
   // Return a heap-allocated iterator over the contents of the database.
   // The result of NewIterator() is initially invalid (caller must

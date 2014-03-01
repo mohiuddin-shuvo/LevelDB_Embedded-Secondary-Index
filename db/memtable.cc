@@ -8,6 +8,10 @@
 #include "leveldb/env.h"
 #include "leveldb/iterator.h"
 #include "util/coding.h"
+#include <sstream>
+#include <fstream>
+#include "rapidjson/document.h"
+
 
 namespace leveldb {
 
@@ -142,4 +146,126 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   return false;
 }
 
-}  // namespace leveldb
+bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, string secKey, int kNoOfOutputs){
+   if(secKey.empty()) 
+        return false;
+   //ofstream outputFile;
+   //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt");
+  Slice memkey = skey.memtable_key();
+  //outputFile<<
+  Table::Iterator iter(&table_);
+  iter.SeekToFirst();
+  bool found = false;
+  
+  //outputFile<<"in\n";
+  
+  while (iter.Valid()) {
+      
+    const char* entry = iter.key();
+    uint32_t key_length;
+    const char* key_ptr = GetVarint32Ptr(entry, entry+5, &key_length);
+    /*if (comparator_.comparator.user_comparator()->Compare(
+            Slice(key_ptr, key_length - 8),
+            skey.user_key()) == 0) {
+      // Correct user key
+     * */
+    
+      const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
+      std::string val;
+      //outputFile<<"in\n"<<tag<<endl;
+      switch (static_cast<ValueType>(tag & 0xff)) {
+          
+        case kTypeValue: {
+             
+          Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
+           
+          val.assign(v.data(), v.size());
+          //outputFile<<"in\n"<<val<<endl;
+          //parse the Json Object
+            
+          
+            rapidjson::Document docToParse; 
+
+            docToParse.Parse<0>(val.c_str());   
+
+            ///
+            const char* sKeyAtt = secKey.c_str();
+
+            if(!docToParse.IsObject()||!docToParse.HasMember(sKeyAtt)||docToParse[sKeyAtt].IsNull())
+                return false;
+
+            std::ostringstream key;
+            if(docToParse[sKeyAtt].IsNumber())
+            {
+                  if(docToParse[sKeyAtt].IsUint64())
+                  {
+                      unsigned long long int tid = docToParse[sKeyAtt].GetUint64();
+                      key<<tid;
+
+                  }
+                  else if (docToParse[sKeyAtt].IsInt64())
+                  {
+                      long long int tid = docToParse[sKeyAtt].GetInt64();
+                      key<<tid;
+                  }
+                  else if (docToParse[sKeyAtt].IsDouble())
+                  {
+                      double tid = docToParse[sKeyAtt].GetDouble();
+                      key<<tid;
+                  }
+
+                  else if (docToParse[sKeyAtt].IsUint())
+                  {
+                      unsigned int tid = docToParse[sKeyAtt].GetUint();
+                      key<<tid;
+                  }
+                  else if (docToParse[sKeyAtt].IsInt())
+                  {
+                      int tid = docToParse[sKeyAtt].GetInt();
+                      key<<tid;             
+                  }
+            }
+            else if (docToParse[sKeyAtt].IsString())
+            {
+                  const char* tid = docToParse[sKeyAtt].GetString();
+                  key<<tid;
+            }
+            else if(docToParse[sKeyAtt].IsBool())
+            {
+                  bool tid = docToParse[sKeyAtt].GetBool();
+                  key<<tid;
+            }
+            
+            Slice Key = key.str();
+            //outputFile<<key.str()<<endl<<val<<endl;
+          if (comparator_.comparator.user_comparator()->Compare(
+            Key,
+            skey.user_key()) == 0) {
+            struct SKeyReturnVal newVal;
+            newVal.key = Slice(key_ptr, key_length - 8);
+            newVal.value = val.c_str();
+            value->push_back(newVal);
+            kNoOfOutputs--;
+            
+            //outputFile<<key<<"\nfound"<<endl;
+            found = true;
+          }
+          
+          
+          
+        }
+        //To Do handle deleted entries
+        /*case kTypeDeletion:
+          *s = Status::NotFound(Slice());
+          return true;*/
+      }
+      if(kNoOfOutputs<=0)
+         break;
+      iter.Next();   
+  }
+  return found;
+  
+ }
+
+  
+} // namespace leveldb
