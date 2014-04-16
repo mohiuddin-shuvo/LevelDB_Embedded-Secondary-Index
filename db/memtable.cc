@@ -243,7 +243,14 @@ bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Sta
             skey.user_key()) == 0) {
             struct SKeyReturnVal newVal;
             newVal.key = Slice(key_ptr, key_length - 8);
-            newVal.value = val.c_str();
+            char *d2;
+            d2 = new char[val.size()];
+            std::strcpy(d2,val.c_str());
+            //char *d2;
+            //d2 = new char[v.size()+1];
+            //memcpy(d2,v.data(),v.size());
+            //d2[v.size()]='/0';
+            newVal.value = Slice(d2);
             value->push_back(newVal);
             kNoOfOutputs--;
             

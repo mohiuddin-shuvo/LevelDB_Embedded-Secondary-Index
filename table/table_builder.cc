@@ -4,6 +4,7 @@
 
 #include "leveldb/table_builder.h"
 #include <sstream>
+#include <fstream>
 #include <assert.h>
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
@@ -98,6 +99,9 @@ Status TableBuilder::ChangeOptions(const Options& options) {
 }
 
 void TableBuilder::Add(const Slice& key, const Slice& value) {
+    std::ofstream outputFile;
+    outputFile.open("/Users/nakshikatha/Desktop/test codes/add.txt",std::ofstream::out | std::ofstream::app);
+    //outputFile<<"inside Add\n";
   Rep* r = rep_;
   assert(!r->closed);
   if (!ok()) return;
@@ -115,11 +119,11 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
   }
 
   if (r->filter_block != NULL) {
+      //outputFile<<key.ToString()<<std::endl;
     r->filter_block->AddKey(key);
   }
-if (r->secondary_filter_block != NULL) {
-    if(r->options.secondaryAtt.empty()) 
-      return;
+if (r->secondary_filter_block != NULL&&!r->options.secondaryAtt.empty()) {
+    
   rapidjson::Document docToParse; 
   
   docToParse.Parse<0>(value.ToString().c_str());   
@@ -171,8 +175,10 @@ if (r->secondary_filter_block != NULL) {
         bool tid = docToParse[sKeyAtt].GetBool();
         sKey<<tid;
   }
+  std::string tag = key.ToString().substr(key.size()-8);
+  Slice Key = sKey.str()+tag;
+  //outputFile<<"Sec: "<<Key.ToString()<<std::endl;
   
-  Slice Key = sKey.str();
   
   r->secondary_filter_block->AddKey(Key);
 }

@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "table/format.h"
-
+#include <fstream>
 #include "leveldb/env.h"
 #include "port/port.h"
 #include "table/block.h"
@@ -21,10 +21,15 @@ void BlockHandle::EncodeTo(std::string* dst) const {
 }
 
 Status BlockHandle::DecodeFrom(Slice* input) {
+    //std::ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug3.txt", std::ofstream::out | std::ofstream::app);
+    //outputFile<<"in decode\n";
   if (GetVarint64(input, &offset_) &&
       GetVarint64(input, &size_)) {
+      //outputFile<<"ok\n";
     return Status::OK();
   } else {
+      //outputFile<<"corrupt\n";
     return Status::Corruption("bad block handle");
   }
 }

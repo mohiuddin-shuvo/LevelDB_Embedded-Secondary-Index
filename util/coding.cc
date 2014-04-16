@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "util/coding.h"
-
+#include <fstream>
 namespace leveldb {
 
 void EncodeFixed32(char* buf, uint32_t value) {
@@ -158,10 +158,14 @@ const char* GetVarint64Ptr(const char* p, const char* limit, uint64_t* value) {
 }
 
 bool GetVarint64(Slice* input, uint64_t* value) {
+    //std::ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug3.txt", std::ofstream::out | std::ofstream::app);
   const char* p = input->data();
   const char* limit = p + input->size();
   const char* q = GetVarint64Ptr(p, limit, value);
   if (q == NULL) {
+      //outputFile<<"false\n";
+
     return false;
   } else {
     *input = Slice(q, limit - q);

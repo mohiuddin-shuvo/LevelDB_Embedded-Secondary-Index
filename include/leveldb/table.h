@@ -7,7 +7,8 @@
 
 #include <stdint.h>
 #include "leveldb/iterator.h"
-
+#include "db/dbformat.h"
+#include <vector>
 namespace leveldb {
 
 class Block;
@@ -70,10 +71,13 @@ class Table {
       const ReadOptions&, const Slice& key,
       void* arg,
       void (*handle_result)(void* arg, const Slice& k, const Slice& v));
-
+  Status InternalGet(const ReadOptions& options, const Slice& k,
+                          void* arg,
+                          bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),string secKey, int kNoOfOutputs) ;
 
   void ReadMeta(const Footer& footer);
   void ReadFilter(const Slice& filter_handle_value);
+  void ReadSecondaryFilter(const Slice& filter_handle_value);
 
   // No copying allowed
   Table(const Table&);

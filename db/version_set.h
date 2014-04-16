@@ -72,7 +72,10 @@ class Version {
   };
   Status Get(const ReadOptions&, const LookupKey& key, std::string* val,
              GetStats* stats);
-
+  Status Get(const ReadOptions& options,
+                    const LookupKey& k,
+                    std::vector<SKeyReturnVal>* value,
+                    GetStats* stats,string secKey, int kNoOfOutputs);
   // Adds "stats" into the current state.  Returns true if a new
   // compaction may need to be triggered, false otherwise.
   // REQUIRES: lock is held

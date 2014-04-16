@@ -3,6 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <stdio.h>
+//#include <fstream>
 #include "db/dbformat.h"
 #include "port/port.h"
 #include "util/coding.h"
@@ -104,11 +105,15 @@ const char* InternalFilterPolicy::Name() const {
 
 void InternalFilterPolicy::CreateFilter(const Slice* keys, int n,
                                         std::string* dst) const {
+    //std::ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/add.txt",std::ofstream::out | std::ofstream::app);
+    //outputFile<<"inside dbformat\n";
   // We rely on the fact that the code in table.cc does not mind us
   // adjusting keys[].
   Slice* mkey = const_cast<Slice*>(keys);
   for (int i = 0; i < n; i++) {
     mkey[i] = ExtractUserKey(keys[i]);
+    //outputFile<<keys[i].ToString()<<std::endl;
     // TODO(sanjay): Suppress dups?
   }
   user_policy_->CreateFilter(keys, n, dst);

@@ -1123,8 +1123,8 @@ Status DBImpl::Get(const ReadOptions& options,
 Status DBImpl::Get(const ReadOptions& options,
                    const Slice& skey,
                    std::vector<SKeyReturnVal>* value, int kNoOfOutputs) {
-    ofstream outputFile;
-    outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt");
+    //ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug3.txt");
   Status s;
   //outputFile<<"in\n";
   MutexLock l(&mutex_);
@@ -1152,14 +1152,19 @@ Status DBImpl::Get(const ReadOptions& options,
     //outputFile<<"in\n";
     LookupKey lkey(skey, snapshot);
     //outputFile<<"in\n";
-    if (mem->Get(lkey, value, &s,this->options_.secondaryAtt,kNoOfOutputs)) {
-      // Done
-    } else if (imm != NULL && imm->Get(lkey, value, &s,this->options_.secondaryAtt,kNoOfOutputs)) {
-      // Done
-    } else {
-      s = current->Get(options, lkey, value, &stats);
-      //have_stat_update = true;
+    mem->Get(lkey, value, &s,this->options_.secondaryAtt,kNoOfOutputs) ;
+    if(imm != NULL && kNoOfOutputs-value->size()>0) {
+      imm->Get(lkey, value, &s,this->options_.secondaryAtt,kNoOfOutputs-value->size());
+    }  
+    
+    if(kNoOfOutputs-value->size()>0)
+    {
+        //outputFile<<"in\n";
+        s = current->Get(options, lkey, value, &stats,this->options_.secondaryAtt,kNoOfOutputs);
+        //outputFile<<"in\n";
     }
+      //have_stat_update = true;
+     
     //outputFile<<"in\n";
     mutex_.Lock();
     //outputFile<<"in\n";
@@ -1171,7 +1176,7 @@ Status DBImpl::Get(const ReadOptions& options,
   mem->Unref();
   if (imm != NULL) imm->Unref();
   //current->Unref();
-  outputFile.close();
+  //outputFile.close();
   return s;
 }
 

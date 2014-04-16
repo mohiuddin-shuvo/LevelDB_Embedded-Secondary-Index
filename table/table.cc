@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "leveldb/table.h"
-
+#include "util/coding.h"
 #include "leveldb/cache.h"
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
@@ -14,8 +14,18 @@
 #include "table/format.h"
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
+#include <sstream>
+#include <fstream>
+#include "rapidjson/document.h"
 
 namespace leveldb {
+    
+static Slice GetLengthPrefixedSlice(const char* data) {
+  uint32_t len;
+  const char* p = data;
+  p = GetVarint32Ptr(p, p + 5, &len);  // +5: we assume "p" is not corrupted
+  return Slice(p, len);
+}
 
 struct Table::Rep {
   ~Rep() {
@@ -30,6 +40,9 @@ struct Table::Rep {
   uint64_t cache_id;
   FilterBlockReader* filter;
   const char* filter_data;
+  
+  FilterBlockReader* secondary_filter;
+  const char* secondary_filter_data;
 
   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
   Block* index_block;
@@ -39,6 +52,8 @@ Status Table::Open(const Options& options,
                    RandomAccessFile* file,
                    uint64_t size,
                    Table** table) {
+    
+    
   *table = NULL;
   if (size < Footer::kEncodedLength) {
     return Status::InvalidArgument("file is too short to be an sstable");
@@ -75,6 +90,8 @@ Status Table::Open(const Options& options,
     rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
     rep->filter_data = NULL;
     rep->filter = NULL;
+    rep->secondary_filter_data = NULL;
+    rep->secondary_filter = NULL;
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
   } else {
@@ -85,6 +102,10 @@ Status Table::Open(const Options& options,
 }
 
 void Table::ReadMeta(const Footer& footer) {
+    
+    //ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt",std::ofstream::out | std::ofstream::app);
+    //outputFile<<"read meta\n";
   if (rep_->options.filter_policy == NULL) {
     return;  // Do not need any metadata
   }
@@ -104,8 +125,20 @@ void Table::ReadMeta(const Footer& footer) {
   key.append(rep_->options.filter_policy->Name());
   iter->Seek(key);
   if (iter->Valid() && iter->key() == Slice(key)) {
+      //outputFile<<"valid P\n";
     ReadFilter(iter->value());
   }
+  
+  std::string skey = "secondaryfilter.";
+  skey.append(rep_->options.filter_policy->Name());
+  iter->Seek(skey);
+  //outputFile<<(iter->Valid())<<endl;
+  if (iter->Valid() && iter->key() == Slice(skey)) {
+      //outputFile<<"valid S\n";
+    ReadSecondaryFilter(iter->value());
+    //outputFile<<(rep_->secondary_filter==NULL)<<endl;
+  }
+  
   delete iter;
   delete meta;
 }
@@ -129,6 +162,27 @@ void Table::ReadFilter(const Slice& filter_handle_value) {
   }
   rep_->filter = new FilterBlockReader(rep_->options.filter_policy, block.data);
 }
+
+void Table::ReadSecondaryFilter(const Slice& filter_handle_value) {
+  Slice v = filter_handle_value;
+  BlockHandle filter_handle;
+  if (!filter_handle.DecodeFrom(&v).ok()) {
+    return;
+  }
+
+  // We might want to unify with ReadBlock() if we start
+  // requiring checksum verification in Table::Open.
+  ReadOptions opt;
+  BlockContents block;
+  if (!ReadBlock(rep_->file, opt, filter_handle, &block).ok()) {
+    return;
+  }
+  if (block.heap_allocated) {
+    rep_->secondary_filter_data = block.data.data();     // Will need to delete later
+  }
+  rep_->secondary_filter = new FilterBlockReader(rep_->options.filter_policy, block.data);
+}
+
 
 Table::~Table() {
   delete rep_;
@@ -244,7 +298,83 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
   return s;
 }
 
+Status Table::InternalGet(const ReadOptions& options, const Slice& k,
+                          void* arg,
+                          bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),string secKey, int kNoOfOutputs)  {
+    ofstream outputFile;
+    outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt",std::ofstream::out | std::ofstream::app);
+    //outputFile<<k.ToString()<<"\n\nStart:\n\n";
+  Status s;
+  Iterator* iiter = rep_->index_block->NewIterator(rep_->options.comparator);
+  iiter->SeekToFirst();
+ 
+  //outputFile<<"in2\n";
+  int p =1;
+  while (iiter->Valid()) {
+    Slice handle_value = iiter->value();
+      FilterBlockReader* filter = rep_->secondary_filter;
+      BlockHandle handle;
+      //outputFile<<(filter != NULL)<<endl;//(!filter->KeyMayMatch(handle.offset(), k));//(handle.DecodeFrom(&handle_value).ok());
+      if (filter != NULL &&
+          handle.DecodeFrom(&handle_value).ok() &&
+          !filter->KeyMayMatch(handle.offset(), k)) {
+          //outputFile<<(!filter->KeyMayMatch(handle.offset(), k))<<"\n";
+          outputFile<<"false\n";
+        // Not found
+      } else {
+           
+        outputFile<<"true\n";
+  
+        Iterator* block_iter = BlockReader(this, options, iiter->value());
+        block_iter->SeekToFirst();
+        while(block_iter->Valid()) {
+          
+        bool f = (*saver)(arg, block_iter->key(), block_iter->value(),secKey);
+                //outputFile<<newVal.key.ToString()<<endl<<newVal.value.ToString()<<endl;
+                
+                if(f)
+                    kNoOfOutputs--;
+                
+                
+                
+                if(kNoOfOutputs<=0)
+                {
+                    if (s.ok()) {
+                        s = iiter->status();
+                      }
+                    
+                    //delete block_iter;
+                    //delete iiter;
+                    outputFile.close();
+                    return s;
+                }
+               
+                      
+           
+          
+         
+        block_iter->Next();
+        }
+        s = block_iter->status();
+        delete block_iter;
+        
+        
+      }
+      
+      iiter->Next();
+  }
+  
+   
+   
+  if (s.ok()) {
+    s = iiter->status();
+  }
+  delete iiter;
+  outputFile.close();
+  return s;
+}
 
+ 
 uint64_t Table::ApproximateOffsetOf(const Slice& key) const {
   Iterator* index_iter =
       rep_->index_block->NewIterator(rep_->options.comparator);

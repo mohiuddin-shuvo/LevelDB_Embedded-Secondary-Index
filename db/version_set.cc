@@ -3,7 +3,9 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/version_set.h"
-
+#include <fstream>
+#include <sstream>
+#include <cstring>
 #include <algorithm>
 #include <stdio.h>
 #include "db/filename.h"
@@ -17,6 +19,7 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
+#include "rapidjson/document.h"
 
 namespace leveldb {
 
@@ -269,6 +272,12 @@ struct Saver {
   Slice user_key;
   std::string* value;
 };
+struct SecSaver {
+  SaverState state;
+  const Comparator* ucmp;
+  Slice user_key;
+  std::vector<SKeyReturnVal>* value;
+};
 }
 static void SaveValue(void* arg, const Slice& ikey, const Slice& v) {
   Saver* s = reinterpret_cast<Saver*>(arg);
@@ -283,6 +292,116 @@ static void SaveValue(void* arg, const Slice& ikey, const Slice& v) {
       }
     }
   }
+}
+
+static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string secKey) {
+  SecSaver* s = reinterpret_cast<SecSaver*>(arg);
+             
+  ParsedInternalKey parsed_key;
+  if (!ParseInternalKey(ikey, &parsed_key)) {
+    s->state = kCorrupt;
+  } else {
+      
+        std:string val;
+        val.assign(v.data(), v.size());
+                
+            //parse the Json Object
+
+
+
+        rapidjson::Document docToParse; 
+
+        docToParse.Parse<0>(val.c_str());   
+
+        ///
+        const char* sKeyAtt = secKey.c_str();
+
+        if(!docToParse.IsObject()||!docToParse.HasMember(sKeyAtt)||docToParse[sKeyAtt].IsNull())
+            return false;
+
+        std::ostringstream key;
+        if(docToParse[sKeyAtt].IsNumber())
+        {
+              if(docToParse[sKeyAtt].IsUint64())
+              {
+                  unsigned long long int tid = docToParse[sKeyAtt].GetUint64();
+                  key<<tid;
+
+              }
+              else if (docToParse[sKeyAtt].IsInt64())
+              {
+                  long long int tid = docToParse[sKeyAtt].GetInt64();
+                  key<<tid;
+              }
+              else if (docToParse[sKeyAtt].IsDouble())
+              {
+                  double tid = docToParse[sKeyAtt].GetDouble();
+                  key<<tid;
+              }
+
+              else if (docToParse[sKeyAtt].IsUint())
+              {
+                  unsigned int tid = docToParse[sKeyAtt].GetUint();
+                  key<<tid;
+              }
+              else if (docToParse[sKeyAtt].IsInt())
+              {
+                  int tid = docToParse[sKeyAtt].GetInt();
+                  key<<tid;             
+              }
+        }
+        else if (docToParse[sKeyAtt].IsString())
+        {
+              const char* tid = docToParse[sKeyAtt].GetString();
+              key<<tid;
+        }
+        else if(docToParse[sKeyAtt].IsBool())
+        {
+              bool tid = docToParse[sKeyAtt].GetBool();
+              key<<tid;
+        }
+
+        Slice Key = key.str();
+
+      
+    if (s->ucmp->Compare(Key, s->user_key) == 0) {
+      s->state = (parsed_key.type == kTypeValue) ? kFound : kDeleted;
+      if (s->state == kFound) {
+        
+        struct SKeyReturnVal newVal;
+        Slice ukey = ExtractUserKey(ikey);
+        const char* p = ukey.data();
+         
+        char *d;
+        /*
+        if(ikey.size()-7>0)
+        {
+            d = new char[ikey.size()-6];
+            memcpy( d, p, ikey.size()-7 );
+            d[ikey.size()-7] = '\0';
+            //std::strcpy(d,p);
+            
+            newVal.key = Slice(d);
+        }*/
+        
+        d = new char[ukey.size()+1];
+        memcpy( d, p, ukey.size() );
+        d[ukey.size()] = '\0';
+            //std::strcpy(d,p);
+        newVal.key = Slice(d);
+        char *d2;
+        d2 = new char[v.size()];
+        std::strcpy(d2,val.c_str());
+        
+        //Slice(block_iter->key().data(),block_iter->key().size());//entry;
+        newVal.value = Slice(d2);                 
+        s->value->push_back(newVal); 
+        return true;
+      }
+    }
+  }
+  
+  return false;
 }
 
 static bool NewestFirst(FileMetaData* a, FileMetaData* b) {
@@ -432,6 +551,124 @@ Status Version::Get(const ReadOptions& options,
 
   return Status::NotFound(Slice());  // Use an empty error message for speed
 }
+
+
+
+
+Status Version::Get(const ReadOptions& options,
+                    const LookupKey& k,
+                    std::vector<SKeyReturnVal>* value,
+                    GetStats* stats, string secKey, int kNoOfOutputs) {
+    
+    //ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug2.txt");
+    
+    //outputFile<<"in\n";
+    
+    
+  Slice ikey = k.internal_key();
+  Slice user_key = k.user_key();
+  const Comparator* ucmp = vset_->icmp_.user_comparator();
+  Status s;
+
+  stats->seek_file = NULL;
+  stats->seek_file_level = -1;
+  FileMetaData* last_file_read = NULL;
+  int last_file_read_level = -1;
+
+  // We can search level-by-level since entries never hop across
+  // levels.  Therefore we are guaranteed that if we find data
+  // in an smaller level, later levels are irrelevant.
+  std::vector<FileMetaData*> tmp;
+  FileMetaData* tmp2;
+  for (int level = 0; level < config::kNumLevels; level++) {
+    size_t num_files = files_[level].size();
+    if (num_files == 0) continue;
+
+    // Get the list of files to search in this level
+    FileMetaData* const* files = &files_[level][0];
+    //if (level == 0) {
+      // Level-0 files may overlap each other.  Find all files that
+      // overlap user_key and process them in order from newest to oldest.
+      tmp.reserve(num_files);
+      for (uint32_t i = 0; i < num_files; i++) {
+        FileMetaData* f = files[i];
+        //if (ucmp->Compare(user_key, f->smallest.user_key()) >= 0 &&
+        //    ucmp->Compare(user_key, f->largest.user_key()) <= 0) {
+          tmp.push_back(f);
+        //}
+      }
+      if (tmp.empty()) continue;
+
+      std::sort(tmp.begin(), tmp.end(), NewestFirst);
+      files = &tmp[0];
+      num_files = tmp.size();
+    //} 
+    /*else {
+      // Binary search to find earliest index whose largest key >= ikey.
+      uint32_t index = FindFile(vset_->icmp_, files_[level], ikey);
+      if (index >= num_files) {
+        files = NULL;
+        num_files = 0;
+      } else {
+        tmp2 = files[index];
+        if (ucmp->Compare(user_key, tmp2->smallest.user_key()) < 0) {
+          // All of "tmp2" is past any data for user_key
+          files = NULL;
+          num_files = 0;
+        } else {
+          files = &tmp2;
+          num_files = 1;
+        }
+      }
+    }
+     * 
+        */
+      //outputFile<<num_files<<endl;
+    for (uint32_t i = 0; i < num_files; ++i) {
+      if (last_file_read != NULL && stats->seek_file == NULL) {
+        // We have had more than one seek for this read.  Charge the 1st file.
+        stats->seek_file = last_file_read;
+        stats->seek_file_level = last_file_read_level;
+      }
+
+      FileMetaData* f = files[i];
+      last_file_read = f;
+      last_file_read_level = level;
+
+      //outputFile<<f->number<<" in\n"; 
+      //s = vset_->table_cache_->Get(options, f->number, f->file_size,
+      //                             k, value, secKey, kNoOfOutputs,internal_comparator_);
+      SecSaver saver;
+      saver.state = kNotFound;
+      saver.ucmp = ucmp;
+      saver.user_key = user_key;
+      saver.value = value;
+      s = vset_->table_cache_->Get(options, f->number, f->file_size,
+                                   ikey, &saver, &SecSaveValue, secKey, kNoOfOutputs);
+
+      //for(std::vector<SKeyReturnVal>::iterator it = value->begin(); it != value->end(); ++it) {
+      //      outputFile<<it->key.ToString()<<endl<<it->value.ToString()<<endl;
+ 
+      //}
+      //for(int i=0;i<value->size();i++)
+        //  outputFile<<value[i]->key.ToString()<<endl<<value[i]->ToString()<<endl;
+
+      //       outputFile<<"in\n";
+      kNoOfOutputs-=value->size();
+      if(kNoOfOutputs<=0)
+      {
+          //outputFile.close();
+          return s;
+      }
+    }
+  }
+
+  return Status::NotFound(Slice());  // Use an empty error message for speed
+}
+
+
+
 
 bool Version::UpdateStats(const GetStats& stats) {
   FileMetaData* f = stats.seek_file;

@@ -6,6 +6,7 @@
 
 #include "leveldb/filter_policy.h"
 #include "util/coding.h"
+//#include <fstream>
 
 namespace leveldb {
 
@@ -93,18 +94,24 @@ FilterBlockReader::FilterBlockReader(const FilterPolicy* policy,
 }
 
 bool FilterBlockReader::KeyMayMatch(uint64_t block_offset, const Slice& key) {
-  uint64_t index = block_offset >> base_lg_;
-  if (index < num_) {
-    uint32_t start = DecodeFixed32(offset_ + index*4);
-    uint32_t limit = DecodeFixed32(offset_ + index*4 + 4);
-    if (start <= limit && limit <= (offset_ - data_)) {
-      Slice filter = Slice(data_ + start, limit - start);
-      return policy_->KeyMayMatch(key, filter);
-    } else if (start == limit) {
-      // Empty filters do not match any keys
-      return false;
+    //std::ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug3.txt", std::ofstream::out | std::ofstream::app);
+    //outputFile<<"in1\n";
+    uint64_t index = block_offset >> base_lg_;
+    if (index < num_) {
+      uint32_t start = DecodeFixed32(offset_ + index*4);
+      uint32_t limit = DecodeFixed32(offset_ + index*4 + 4);
+      if (start <= limit && limit <= (offset_ - data_)) {
+        Slice filter = Slice(data_ + start, limit - start);
+        //outputFile<<"keymatch\n";
+        //outputFile<<key.ToString()<<std::endl<<filter.ToString()<<std::endl;
+        return policy_->KeyMayMatch(key, filter);
+      } else if (start == limit) {
+        // Empty filters do not match any keys
+        return false;
     }
   }
+  //outputFile<<"error\n";
   return true;  // Errors are treated as potential matches
 }
 

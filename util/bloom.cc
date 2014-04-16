@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "leveldb/filter_policy.h"
-
+//#include <fstream>
 #include "leveldb/slice.h"
 #include "util/hash.h"
 
@@ -33,6 +33,7 @@ class BloomFilterPolicy : public FilterPolicy {
   }
 
   virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const {
+   
     // Compute bloom filter size (in both bits and bytes)
     size_t bits = n * bits_per_key_;
 
@@ -61,6 +62,10 @@ class BloomFilterPolicy : public FilterPolicy {
   }
 
   virtual bool KeyMayMatch(const Slice& key, const Slice& bloom_filter) const {
+    //std::ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/filter.txt",std::ofstream::out | std::ofstream::app);
+    //outputFile<<"inside KeyMayMatch\n";
+    //outputFile<<key.ToString()<<std::endl;
     const size_t len = bloom_filter.size();
     if (len < 2) return false;
 
@@ -73,6 +78,7 @@ class BloomFilterPolicy : public FilterPolicy {
     if (k > 30) {
       // Reserved for potentially new encodings for short bloom filters.
       // Consider it a match.
+        //outputFile<<"true1\n";
       return true;
     }
 
@@ -83,6 +89,7 @@ class BloomFilterPolicy : public FilterPolicy {
       if ((array[bitpos/8] & (1 << (bitpos % 8))) == 0) return false;
       h += delta;
     }
+    //outputFile<<"true2\n";
     return true;
   }
 };
