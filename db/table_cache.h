@@ -50,7 +50,7 @@ Status Get(const ReadOptions& options,
                       const Slice& k,
                        void* arg,
                        bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),
-                       string secKey, int kNoOfOutputs) ;
+                       string secKey) ;
   // Evict any entry for the specified file number
   void Evict(uint64_t file_number);
 

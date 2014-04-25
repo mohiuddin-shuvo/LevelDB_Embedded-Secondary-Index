@@ -17,6 +17,7 @@
 
 #include <map>
 #include <set>
+#include <unordered_set>
 #include <vector>
 #include "db/dbformat.h"
 #include "db/version_edit.h"
@@ -75,7 +76,7 @@ class Version {
   Status Get(const ReadOptions& options,
                     const LookupKey& k,
                     std::vector<SKeyReturnVal>* value,
-                    GetStats* stats,string secKey, int kNoOfOutputs);
+                    GetStats* stats,string secKey, int kNoOfOutputs,std::unordered_set<std::string>* resultSetofKeysFound);
   // Adds "stats" into the current state.  Returns true if a new
   // compaction may need to be triggered, false otherwise.
   // REQUIRES: lock is held

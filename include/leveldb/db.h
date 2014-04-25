@@ -40,8 +40,9 @@ struct Range {
 
 
 struct SKeyReturnVal {
-  Slice key;          // Included in the range
-  Slice value;          // Not included in the range
+  Slice key;           
+  Slice value;
+  uint64_t sequence_number;
 };
 // A DB is a persistent ordered map from keys to values.
 // A DB is safe for concurrent access from multiple threads without

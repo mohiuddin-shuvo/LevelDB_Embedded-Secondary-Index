@@ -10,6 +10,7 @@
 #include "util/coding.h"
 #include <sstream>
 #include <fstream>
+#include <unordered_set>
 #include "rapidjson/document.h"
 
 
@@ -146,7 +147,7 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   return false;
 }
 
-bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, string secKey, int kNoOfOutputs){
+bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, string secKey,std::unordered_set<std::string>* resultSetofKeysFound){
    if(secKey.empty()) 
         return false;
    //ofstream outputFile;
@@ -243,19 +244,27 @@ bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Sta
             skey.user_key()) == 0) {
             struct SKeyReturnVal newVal;
             newVal.key = Slice(key_ptr, key_length - 8);
-            char *d2;
-            d2 = new char[val.size()];
-            std::strcpy(d2,val.c_str());
-            //char *d2;
-            //d2 = new char[v.size()+1];
-            //memcpy(d2,v.data(),v.size());
-            //d2[v.size()]='/0';
-            newVal.value = Slice(d2);
-            value->push_back(newVal);
-            kNoOfOutputs--;
             
-            //outputFile<<key<<"\nfound"<<endl;
-            found = true;
+            if(resultSetofKeysFound->find(newVal.key.ToString())==resultSetofKeysFound->end())
+            {
+            
+            
+                char *d2;
+                d2 = new char[val.size()];
+                std::strcpy(d2,val.c_str());
+                //char *d2;
+                //d2 = new char[v.size()+1];
+                //memcpy(d2,v.data(),v.size());
+                //d2[v.size()]='/0';
+                newVal.value = Slice(d2);
+                newVal.sequence_number = tag;
+                value->push_back(newVal);
+                //kNoOfOutputs--;
+                resultSetofKeysFound->insert(newVal.key.ToString());
+                //outputFile<<key<<"\nfound"<<endl;
+                found = true;
+            }
+            
           }
           
           
@@ -266,8 +275,8 @@ bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Sta
           *s = Status::NotFound(Slice());
           return true;*/
       }
-      if(kNoOfOutputs<=0)
-         break;
+      //if(kNoOfOutputs<=0)
+         //break;
       iter.Next();   
   }
   return found;

@@ -126,12 +126,12 @@ Status TableCache::Get(const ReadOptions& options,
                       const Slice& k,
                        void* arg,
                        bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),
-                       string secKey, int kNoOfOutputs) {
+                       string secKey) {
   Cache::Handle* handle = NULL;
   Status s = FindTable(file_number, file_size, &handle);
   if (s.ok()) {
     Table* t = reinterpret_cast<TableAndFile*>(cache_->Value(handle))->table;
-    s = t->InternalGet(options, k, arg, saver ,secKey,kNoOfOutputs);
+    s = t->InternalGet(options, k, arg, saver ,secKey);
     cache_->Release(handle);
   }
   return s;

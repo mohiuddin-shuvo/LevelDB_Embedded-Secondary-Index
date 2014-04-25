@@ -8,6 +8,7 @@
 #include <cstring>
 #include <algorithm>
 #include <stdio.h>
+#include <unordered_set>
 #include "db/filename.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -277,6 +278,7 @@ struct SecSaver {
   const Comparator* ucmp;
   Slice user_key;
   std::vector<SKeyReturnVal>* value;
+  std::unordered_set<std::string>* resultSetofKeysFound;
 };
 }
 static void SaveValue(void* arg, const Slice& ikey, const Slice& v) {
@@ -370,33 +372,46 @@ static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string se
         
         struct SKeyReturnVal newVal;
         Slice ukey = ExtractUserKey(ikey);
-        const char* p = ukey.data();
-         
-        char *d;
-        /*
-        if(ikey.size()-7>0)
+        if(s->resultSetofKeysFound->find(ukey.ToString())==s->resultSetofKeysFound->end())
         {
-            d = new char[ikey.size()-6];
-            memcpy( d, p, ikey.size()-7 );
-            d[ikey.size()-7] = '\0';
-            //std::strcpy(d,p);
-            
+         
+            const char* p = ukey.data();
+
+            char *d;
+            /*
+            if(ikey.size()-7>0)
+            {
+                d = new char[ikey.size()-6];
+                memcpy( d, p, ikey.size()-7 );
+                d[ikey.size()-7] = '\0';
+                //std::strcpy(d,p);
+
+                newVal.key = Slice(d);
+            }*/
+
+            d = new char[ukey.size()+1];
+            memcpy( d, p, ukey.size() );
+            d[ukey.size()] = '\0';
+                //std::strcpy(d,p);
             newVal.key = Slice(d);
-        }*/
-        
-        d = new char[ukey.size()+1];
-        memcpy( d, p, ukey.size() );
-        d[ukey.size()] = '\0';
-            //std::strcpy(d,p);
-        newVal.key = Slice(d);
-        char *d2;
-        d2 = new char[v.size()];
-        std::strcpy(d2,val.c_str());
-        
-        //Slice(block_iter->key().data(),block_iter->key().size());//entry;
-        newVal.value = Slice(d2);                 
-        s->value->push_back(newVal); 
-        return true;
+            char *d2;
+            d2 = new char[v.size()];
+            std::strcpy(d2,val.c_str());
+
+            //Slice(block_iter->key().data(),block_iter->key().size());//entry;
+            newVal.value = Slice(d2); 
+            const char* entry = ikey.data();
+            
+            newVal.value = Slice(d2);
+            
+            
+            
+            newVal.sequence_number = parsed_key.sequence;
+            
+            s->value->push_back(newVal); 
+            s->resultSetofKeysFound->insert(ukey.ToString());
+            return true;
+        }
       }
     }
   }
@@ -406,6 +421,9 @@ static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string se
 
 static bool NewestFirst(FileMetaData* a, FileMetaData* b) {
   return a->number > b->number;
+}
+static bool NewestFirstSequenceNumber(SKeyReturnVal a, SKeyReturnVal b) {
+  return a.sequence_number > b.sequence_number;
 }
 
 void Version::ForEachOverlapping(Slice user_key, Slice internal_key,
@@ -558,7 +576,7 @@ Status Version::Get(const ReadOptions& options,
 Status Version::Get(const ReadOptions& options,
                     const LookupKey& k,
                     std::vector<SKeyReturnVal>* value,
-                    GetStats* stats, string secKey, int kNoOfOutputs) {
+                    GetStats* stats, string secKey, int kNoOfOutputs,std::unordered_set<std::string>* resultSetofKeysFound) {
     
     //ofstream outputFile;
     //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug2.txt");
@@ -581,6 +599,7 @@ Status Version::Get(const ReadOptions& options,
   // in an smaller level, later levels are irrelevant.
   std::vector<FileMetaData*> tmp;
   FileMetaData* tmp2;
+  int valueSize = 0;
   for (int level = 0; level < config::kNumLevels; level++) {
     size_t num_files = files_[level].size();
     if (num_files == 0) continue;
@@ -644,8 +663,9 @@ Status Version::Get(const ReadOptions& options,
       saver.ucmp = ucmp;
       saver.user_key = user_key;
       saver.value = value;
+      saver.resultSetofKeysFound = resultSetofKeysFound;
       s = vset_->table_cache_->Get(options, f->number, f->file_size,
-                                   ikey, &saver, &SecSaveValue, secKey, kNoOfOutputs);
+                                   ikey, &saver, &SecSaveValue, secKey);
 
       //for(std::vector<SKeyReturnVal>::iterator it = value->begin(); it != value->end(); ++it) {
       //      outputFile<<it->key.ToString()<<endl<<it->value.ToString()<<endl;
@@ -655,15 +675,22 @@ Status Version::Get(const ReadOptions& options,
         //  outputFile<<value[i]->key.ToString()<<endl<<value[i]->ToString()<<endl;
 
       //       outputFile<<"in\n";
-      kNoOfOutputs-=value->size();
-      if(kNoOfOutputs<=0)
-      {
-          //outputFile.close();
-          return s;
-      }
+      
     }
+      
+      if(value->size()>=kNoOfOutputs){
+        std::sort(value->begin(), value->end(), NewestFirstSequenceNumber);
+        //value->erase(value->begin()+kNoOfOutputs,value->end());
+      
+        return s;
+      }
+      
+      //valueSize = value->size();
+      
   }
-
+ 
+   
+  std::sort(value->begin(), value->end(), NewestFirstSequenceNumber);  
   return Status::NotFound(Slice());  // Use an empty error message for speed
 }
 

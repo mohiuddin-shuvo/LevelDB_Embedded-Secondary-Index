@@ -16,6 +16,7 @@
 #include "util/coding.h"
 #include <sstream>
 #include <fstream>
+#include <unordered_set>
 #include "rapidjson/document.h"
 
 namespace leveldb {
@@ -300,7 +301,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
 
 Status Table::InternalGet(const ReadOptions& options, const Slice& k,
                           void* arg,
-                          bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),string secKey, int kNoOfOutputs)  {
+                          bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),string secKey)  {
     ofstream outputFile;
     outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt",std::ofstream::out | std::ofstream::app);
     //outputFile<<k.ToString()<<"\n\nStart:\n\n";
@@ -328,11 +329,11 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
         Iterator* block_iter = BlockReader(this, options, iiter->value());
         block_iter->SeekToFirst();
         while(block_iter->Valid()) {
-          
+         
         bool f = (*saver)(arg, block_iter->key(), block_iter->value(),secKey);
                 //outputFile<<newVal.key.ToString()<<endl<<newVal.value.ToString()<<endl;
                 
-                if(f)
+             /*   if(f)
                     kNoOfOutputs--;
                 
                 
@@ -350,7 +351,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
                 }
                
                       
-           
+           */
           
          
         block_iter->Next();

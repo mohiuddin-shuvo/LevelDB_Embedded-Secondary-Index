@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_DB_MEMTABLE_H_
 
 #include <string>
+#include <unordered_set>
 #include "leveldb/db.h"
 #include "db/dbformat.h"
 #include "db/skiplist.h"
@@ -64,7 +65,7 @@ class MemTable {
   bool Get(const LookupKey& key, std::string* value, Status* s);
 
   //Overload Get mothod for returning the list of key,value pairs for query on sec key
-  bool Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, std::string secKey, int kNoOfOutputs);
+  bool Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, std::string secKey, std::unordered_set<std::string>* resultSetofKeysFound);
 
   
  private:

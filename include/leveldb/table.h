@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_INCLUDE_TABLE_H_
 
 #include <stdint.h>
+#include <unordered_set>
 #include "leveldb/iterator.h"
 #include "db/dbformat.h"
 #include <vector>
@@ -73,7 +74,7 @@ class Table {
       void (*handle_result)(void* arg, const Slice& k, const Slice& v));
   Status InternalGet(const ReadOptions& options, const Slice& k,
                           void* arg,
-                          bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),string secKey, int kNoOfOutputs) ;
+                          bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),string secKey) ;
 
   void ReadMeta(const Footer& footer);
   void ReadFilter(const Slice& filter_handle_value);
