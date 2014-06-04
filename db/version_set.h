@@ -23,6 +23,7 @@
 #include "db/version_edit.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
+#include "db_impl.h"
 
 namespace leveldb {
 
@@ -76,7 +77,7 @@ class Version {
   Status Get(const ReadOptions& options,
                     const LookupKey& k,
                     std::vector<SKeyReturnVal>* value,
-                    GetStats* stats,string secKey, int kNoOfOutputs,std::unordered_set<std::string>* resultSetofKeysFound);
+                    GetStats* stats,string secKey, int kNoOfOutputs,std::unordered_set<std::string>* resultSetofKeysFound, DBImpl *db);
   // Adds "stats" into the current state.  Returns true if a new
   // compaction may need to be triggered, false otherwise.
   // REQUIRES: lock is held

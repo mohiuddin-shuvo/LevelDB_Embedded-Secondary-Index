@@ -301,9 +301,9 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
 
 Status Table::InternalGet(const ReadOptions& options, const Slice& k,
                           void* arg,
-                          bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),string secKey)  {
-    ofstream outputFile;
-    outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt",std::ofstream::out | std::ofstream::app);
+                          bool (*saver)(void*, const Slice&, const Slice&,std::string secKey,int topKOutput, DBImpl* db),string secKey,int topKOutput,DBImpl* db)  {
+    //ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt");
     //outputFile<<k.ToString()<<"\n\nStart:\n\n";
   Status s;
   Iterator* iiter = rep_->index_block->NewIterator(rep_->options.comparator);
@@ -320,20 +320,22 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
           handle.DecodeFrom(&handle_value).ok() &&
           !filter->KeyMayMatch(handle.offset(), k)) {
           //outputFile<<(!filter->KeyMayMatch(handle.offset(), k))<<"\n";
-          outputFile<<"false\n";
+          //outputFile<<"false\n";
         // Not found
       } else {
            
-        outputFile<<"true\n";
+        //outputFile<<"true\n";
   
         Iterator* block_iter = BlockReader(this, options, iiter->value());
         block_iter->SeekToFirst();
         while(block_iter->Valid()) {
          
-        bool f = (*saver)(arg, block_iter->key(), block_iter->value(),secKey);
+        bool f = (*saver)(arg, block_iter->key(), block_iter->value(),secKey, topKOutput,db);
+        //if(f)
+            //outputFile<<"saved\n";
                 //outputFile<<newVal.key.ToString()<<endl<<newVal.value.ToString()<<endl;
                 
-             /*   if(f)
+             /*  if(f)
                     kNoOfOutputs--;
                 
                 
@@ -346,7 +348,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
                     
                     //delete block_iter;
                     //delete iiter;
-                    outputFile.close();
+                    //outputFile.close();
                     return s;
                 }
                
@@ -371,7 +373,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
     s = iiter->status();
   }
   delete iiter;
-  outputFile.close();
+  //outputFile.close();
   return s;
 }
 

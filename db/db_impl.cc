@@ -876,7 +876,6 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 
   // Release mutex while we're actually doing the compaction work
   mutex_.Unlock();
-
   Iterator* input = versions_->MakeInputIterator(compact->compaction);
   input->SeekToFirst();
   Status status;
@@ -1120,19 +1119,20 @@ Status DBImpl::Get(const ReadOptions& options,
   current->Unref();
   return s;
 }
-
-static bool NewestFirst(SKeyReturnVal a, SKeyReturnVal b) {
-  return a.sequence_number > b.sequence_number;
+static bool NewestFirst(const leveldb::SKeyReturnVal& a,const leveldb::SKeyReturnVal& b)
+{
+   return a.sequence_number<b.sequence_number?false:true;
 }
+ 
 
 //New Get method implementation for read on secondary key
 Status DBImpl::Get(const ReadOptions& options,
                    const Slice& skey,
                    std::vector<SKeyReturnVal>* value, int kNoOfOutputs) {
-    ofstream outputFile;
-    outputFile.open("/Users/nakshikatha/Desktop/test codes/debug3.txt");
+    //ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug3.txt");
   Status s;
-  //outputFile<<"in\n";
+  //outputFile<<"innnn\n";
   MutexLock l(&mutex_);
   SequenceNumber snapshot;
   if (options.snapshot != NULL) {
@@ -1162,36 +1162,39 @@ Status DBImpl::Get(const ReadOptions& options,
     
     std::unordered_set<std::string> resultSetofKeysFound;
     
-    mem->Get(lkey, value, &s,this->options_.secondaryAtt,&resultSetofKeysFound) ;
+    //outputFile<<"memGet\n";
+    mem->Get(lkey, value, &s,this->options_.secondaryAtt,&resultSetofKeysFound , kNoOfOutputs, this) ;
     
     //if(value->size()>kNoOfOutputs)
-        std::sort(value->begin(), value->end(), NewestFirst);
+    //std::sort(value->begin(), value->end(), NewestFirst);
     
     
     if(imm != NULL && kNoOfOutputs-value->size()>0) {
-        
+      //outputFile<<"immGet\n";  
       int memsize = value->size(); 
-      imm->Get(lkey, value, &s,this->options_.secondaryAtt,&resultSetofKeysFound);
-      if(value->size()>kNoOfOutputs)
-        std::sort(value->begin()+memsize, value->end(), NewestFirst);
+      imm->Get(lkey, value, &s,this->options_.secondaryAtt,&resultSetofKeysFound,kNoOfOutputs, this);
+      //if(value->size()>kNoOfOutputs)
+       // std::sort(value->begin()+memsize, value->end(), NewestFirst);
     
     }  
     
     if(kNoOfOutputs>value->size())
     {
-        //outputFile<<"in\n";
-        s = current->Get(options, lkey, value, &stats,this->options_.secondaryAtt,kNoOfOutputs,&resultSetofKeysFound);
+        //outputFile<<"sstget\n";
+        s = current->Get(options, lkey, value, &stats,this->options_.secondaryAtt,kNoOfOutputs,&resultSetofKeysFound,this);
         //outputFile<<"in\n";
     }
     //outputFile<<kNoOfOutputs;
     //outputFile<<value->size()<<endl;
       //have_stat_update = true;
-     if(kNoOfOutputs<value->size())
+     /*if(kNoOfOutputs<value->size())
      {
          //outputFile<<value->size()<<endl;
          value->erase(value->begin()+kNoOfOutputs,value->end());
          //outputFile<<value->size()<<endl;
-     }
+     }*/
+    
+    std::sort_heap(value->begin(),value->end(),NewestFirst);
     //outputFile<<"in\n";
     mutex_.Lock();
     //outputFile<<"in\n";

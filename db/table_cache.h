@@ -13,6 +13,7 @@
 #include "leveldb/cache.h"
 #include "leveldb/table.h"
 #include "port/port.h"
+#include "db/db_impl.h"
 
 namespace leveldb {
 
@@ -49,8 +50,8 @@ Status Get(const ReadOptions& options,
                        uint64_t file_size,
                       const Slice& k,
                        void* arg,
-                       bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),
-                       string secKey) ;
+                       bool (*saver)(void*, const Slice&, const Slice&,std::string secKey,int topKOutput,DBImpl* db),
+                       string secKey,int topKOutput,DBImpl* db) ;
   // Evict any entry for the specified file number
   void Evict(uint64_t file_number);
 

@@ -11,6 +11,7 @@
 #include "db/dbformat.h"
 #include "db/skiplist.h"
 #include "util/arena.h"
+#include "db/db_impl.h"
 
 namespace leveldb {
 
@@ -65,7 +66,7 @@ class MemTable {
   bool Get(const LookupKey& key, std::string* value, Status* s);
 
   //Overload Get mothod for returning the list of key,value pairs for query on sec key
-  bool Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, std::string secKey, std::unordered_set<std::string>* resultSetofKeysFound);
+  bool Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, std::string secKey, std::unordered_set<std::string>* resultSetofKeysFound, int topKOutput,DBImpl* db);
 
   
  private:

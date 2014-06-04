@@ -123,15 +123,15 @@ Status TableCache::Get(const ReadOptions& options,
 Status TableCache::Get(const ReadOptions& options,
                        uint64_t file_number,
                        uint64_t file_size,
-                      const Slice& k,
+                       const Slice& k,
                        void* arg,
-                       bool (*saver)(void*, const Slice&, const Slice&,std::string secKey),
-                       string secKey) {
+                       bool (*saver)(void*, const Slice&, const Slice&,std::string secKey,int topKOutput,DBImpl* db),
+                       string secKey,int topKOutput, DBImpl* db) {
   Cache::Handle* handle = NULL;
   Status s = FindTable(file_number, file_size, &handle);
   if (s.ok()) {
     Table* t = reinterpret_cast<TableAndFile*>(cache_->Value(handle))->table;
-    s = t->InternalGet(options, k, arg, saver ,secKey);
+    s = t->InternalGet(options, k, arg, saver ,secKey, topKOutput, db);
     cache_->Release(handle);
   }
   return s;

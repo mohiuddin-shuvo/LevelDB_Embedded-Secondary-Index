@@ -296,7 +296,7 @@ static void SaveValue(void* arg, const Slice& ikey, const Slice& v) {
   }
 }
 
-static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string secKey) {
+static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string secKey, int topKOutput, DBImpl* db) {
   SecSaver* s = reinterpret_cast<SecSaver*>(arg);
              
   ParsedInternalKey parsed_key;
@@ -395,21 +395,43 @@ static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string se
                 //std::strcpy(d,p);
             newVal.key = Slice(d);
             char *d2;
-            d2 = new char[v.size()];
-            std::strcpy(d2,val.c_str());
+            d2 = new char[val.size()+1];
+            const char *t = val.c_str();
+            memcpy( d2, t, val.size());
+            d2[val.size()] = '\0';
+            //std::strcpy(d2,val.c_str());
 
             //Slice(block_iter->key().data(),block_iter->key().size());//entry;
             newVal.value = Slice(d2); 
-            const char* entry = ikey.data();
+            //const char* entry = ikey.data();
             
-            newVal.value = Slice(d2);
+            //newVal.value = Slice(d2);
             
             
             
             newVal.sequence_number = parsed_key.sequence;
+            std::string temp;
+            //s->value->push_back(newVal); 
+            if(s->value->size()<topKOutput)
+            {
+                Status st = db->Get(leveldb::ReadOptions(),newVal.key, &temp);
+                if(st.ok()&&!st.IsNotFound()&&temp==newVal.value.ToString())
+                {
+                        newVal.Push(s->value, newVal);
+                        s->resultSetofKeysFound->insert(ukey.ToString());
+                }
+            }
+            else if(newVal.sequence_number>s->value->front().sequence_number)
+            {
+                Status st = db->Get(leveldb::ReadOptions(),newVal.key, &temp);
+                if(st.ok()&&!st.IsNotFound()&&temp==newVal.value.ToString())
+                {
+                    newVal.Pop(s->value);
+                    newVal.Push(s->value,newVal);
+                    s->resultSetofKeysFound->insert(ukey.ToString());
+                }
+            }
             
-            s->value->push_back(newVal); 
-            s->resultSetofKeysFound->insert(ukey.ToString());
             return true;
         }
       }
@@ -576,7 +598,7 @@ Status Version::Get(const ReadOptions& options,
 Status Version::Get(const ReadOptions& options,
                     const LookupKey& k,
                     std::vector<SKeyReturnVal>* value,
-                    GetStats* stats, string secKey, int kNoOfOutputs,std::unordered_set<std::string>* resultSetofKeysFound) {
+                    GetStats* stats, string secKey, int kNoOfOutputs,std::unordered_set<std::string>* resultSetofKeysFound, DBImpl* db) {
     
     //ofstream outputFile;
     //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug2.txt");
@@ -665,7 +687,7 @@ Status Version::Get(const ReadOptions& options,
       saver.value = value;
       saver.resultSetofKeysFound = resultSetofKeysFound;
       s = vset_->table_cache_->Get(options, f->number, f->file_size,
-                                   ikey, &saver, &SecSaveValue, secKey);
+                                   ikey, &saver, &SecSaveValue, secKey,kNoOfOutputs,db);
 
       //for(std::vector<SKeyReturnVal>::iterator it = value->begin(); it != value->end(); ++it) {
       //      outputFile<<it->key.ToString()<<endl<<it->value.ToString()<<endl;
@@ -679,7 +701,7 @@ Status Version::Get(const ReadOptions& options,
     }
       
       if(value->size()>=kNoOfOutputs){
-        std::sort(value->begin(), value->end(), NewestFirstSequenceNumber);
+        //std::sort(value->begin(), value->end(), NewestFirstSequenceNumber);
         //value->erase(value->begin()+kNoOfOutputs,value->end());
       
         return s;
@@ -690,8 +712,11 @@ Status Version::Get(const ReadOptions& options,
   }
  
    
-  std::sort(value->begin(), value->end(), NewestFirstSequenceNumber);  
-  return Status::NotFound(Slice());  // Use an empty error message for speed
+  //std::sort(value->begin(), value->end(), NewestFirstSequenceNumber); 
+  if(value->size()==0)
+        return Status::NotFound(Slice());  // Use an empty error message for speed
+  else
+      return s;
 }
 
 

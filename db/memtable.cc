@@ -12,6 +12,7 @@
 #include <fstream>
 #include <unordered_set>
 #include "rapidjson/document.h"
+#include "db_impl.h"
 
 
 namespace leveldb {
@@ -147,7 +148,7 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   return false;
 }
 
-bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, string secKey,std::unordered_set<std::string>* resultSetofKeysFound){
+bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, string secKey,std::unordered_set<std::string>* resultSetofKeysFound, int topKOutput, DBImpl* db){
    if(secKey.empty()) 
         return false;
    //ofstream outputFile;
@@ -244,13 +245,14 @@ bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Sta
             skey.user_key()) == 0) {
             struct SKeyReturnVal newVal;
             newVal.key = Slice(key_ptr, key_length - 8);
+            std::string temp;
             
             if(resultSetofKeysFound->find(newVal.key.ToString())==resultSetofKeysFound->end())
             {
             
-            
+                db->Get(leveldb::ReadOptions(),newVal.key, &temp);
                 char *d2;
-                d2 = new char[val.size()];
+                d2 = new char[val.size()+1];
                 std::strcpy(d2,val.c_str());
                 //char *d2;
                 //d2 = new char[v.size()+1];
@@ -258,11 +260,34 @@ bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Sta
                 //d2[v.size()]='/0';
                 newVal.value = Slice(d2);
                 newVal.sequence_number = tag;
-                value->push_back(newVal);
+                
+                 
+
+                if(value->size()<topKOutput)
+                {
+                    Status st = db->Get(leveldb::ReadOptions(),newVal.key, &temp);
+                    if(st.ok()&&!st.IsNotFound()&&temp==newVal.value.ToString())
+                    {
+                        newVal.Push(value, newVal);
+                        resultSetofKeysFound->insert(newVal.key.ToString());
+                    }
+                }
+                else if(newVal.sequence_number>value->front().sequence_number)
+                {
+                    Status st = db->Get(leveldb::ReadOptions(),newVal.key, &temp);
+                    if(st.ok()&&!st.IsNotFound()&&temp==newVal.value.ToString())
+                    {
+                        newVal.Pop(value);
+                        newVal.Push(value,newVal);
+                        resultSetofKeysFound->insert(newVal.key.ToString());
+                    }
+                }
+                //value->push_back(newVal);
                 //kNoOfOutputs--;
-                resultSetofKeysFound->insert(newVal.key.ToString());
+
                 //outputFile<<key<<"\nfound"<<endl;
                 found = true;
+                
             }
             
           }

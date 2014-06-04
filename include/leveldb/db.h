@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <algorithm>
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
 
@@ -37,12 +38,30 @@ struct Range {
   Range() { }
   Range(const Slice& s, const Slice& l) : start(s), limit(l) { }
 };
-
+ 
 
 struct SKeyReturnVal {
   Slice key;           
   Slice value;
   uint64_t sequence_number;
+    static bool comp(const leveldb::SKeyReturnVal& a,const leveldb::SKeyReturnVal& b)
+    {
+       return a.sequence_number<b.sequence_number?false:true;
+    }
+    void Push(vector<leveldb::SKeyReturnVal>* heap,leveldb::SKeyReturnVal val) {
+        heap->push_back(val);
+        push_heap(heap->begin(), heap->end(), comp);
+    }
+    leveldb::SKeyReturnVal Pop(vector<leveldb::SKeyReturnVal>* heap) {
+        leveldb::SKeyReturnVal val = heap->front();
+
+        //This operation will move the smallest element to the end of the vector
+        pop_heap(heap->begin(), heap->end(), comp);
+
+        //Remove the last element from vector, which is the smallest element
+        heap->pop_back(); 
+        return val;
+    }
 };
 // A DB is a persistent ordered map from keys to values.
 // A DB is safe for concurrent access from multiple threads without
