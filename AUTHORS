@@ -1,6 +1,12 @@
 # Names should be added to this file like so:
 # Name or Organization <email address>
 
+University of California Riverside
+
+# Author for novel implementation of embedded secondary indexing:
+ Mohiuddin Abdul Qader <mabdu002@cs.ucr.edu>
+
+# Author for original Leveldb
 Google Inc.
 
 # Initial version authors:

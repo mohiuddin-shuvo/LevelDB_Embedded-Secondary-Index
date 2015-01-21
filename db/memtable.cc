@@ -152,7 +152,7 @@ bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Sta
    if(secKey.empty()) 
         return false;
    //ofstream outputFile;
-   //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug.txt");
+   //outputFile.open("/home/mohiuddin/Desktop/TestDB/debug.txt");
   Slice memkey = skey.memtable_key();
   //outputFile<<
   Table::Iterator iter(&table_);
@@ -244,21 +244,21 @@ bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Sta
             Key,
             skey.user_key()) == 0) {
             struct SKeyReturnVal newVal;
-            newVal.key = Slice(key_ptr, key_length - 8);
+            newVal.key = Slice(key_ptr, key_length - 8).ToString();
             std::string temp;
             
-            if(resultSetofKeysFound->find(newVal.key.ToString())==resultSetofKeysFound->end())
+            if(resultSetofKeysFound->find(newVal.key)==resultSetofKeysFound->end())
             {
             
-                db->Get(leveldb::ReadOptions(),newVal.key, &temp);
-                char *d2;
-                d2 = new char[val.size()+1];
-                std::strcpy(d2,val.c_str());
+                //db->Get(leveldb::ReadOptions(),newVal.key, &temp);
+                //char *d2;
+                //d2 = new char[val.size()+1];
+                //std::strcpy(d2,val.c_str());
                 //char *d2;
                 //d2 = new char[v.size()+1];
                 //memcpy(d2,v.data(),v.size());
                 //d2[v.size()]='/0';
-                newVal.value = Slice(d2);
+                newVal.value = val;//Slice(d2);
                 newVal.sequence_number = tag;
                 
                  
@@ -266,20 +266,21 @@ bool MemTable::Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Sta
                 if(value->size()<topKOutput)
                 {
                     Status st = db->Get(leveldb::ReadOptions(),newVal.key, &temp);
-                    if(st.ok()&&!st.IsNotFound()&&temp==newVal.value.ToString())
+                    if(st.ok()&&!st.IsNotFound()&&temp==newVal.value)
                     {
                         newVal.Push(value, newVal);
-                        resultSetofKeysFound->insert(newVal.key.ToString());
+                        resultSetofKeysFound->insert(newVal.key);
                     }
                 }
                 else if(newVal.sequence_number>value->front().sequence_number)
                 {
                     Status st = db->Get(leveldb::ReadOptions(),newVal.key, &temp);
-                    if(st.ok()&&!st.IsNotFound()&&temp==newVal.value.ToString())
+                    if(st.ok()&&!st.IsNotFound()&&temp==newVal.value)
                     {
                         newVal.Pop(value);
                         newVal.Push(value,newVal);
-                        resultSetofKeysFound->insert(newVal.key.ToString());
+                        resultSetofKeysFound->insert(newVal.key);
+                        resultSetofKeysFound->erase(resultSetofKeysFound->find(value->front().key));
                     }
                 }
                 //value->push_back(newVal);

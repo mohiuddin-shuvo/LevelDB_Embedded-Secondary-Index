@@ -1,0 +1,44 @@
+c++  -dynamiclib -install_name /Users/nakshikatha/Desktop/leveldb_mod/libleveldb.dylib.1 -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -fPIC db/builder.cc db/c.cc db/db_impl.cc db/db_iter.cc db/dbformat.cc db/filename.cc db/log_reader.cc db/log_writer.cc db/memtable.cc db/repair.cc db/table_cache.cc db/version_edit.cc db/version_set.cc db/write_batch.cc table/block.cc table/block_builder.cc table/filter_block.cc table/format.cc table/iterator.cc table/merger.cc table/table.cc table/table_builder.cc table/two_level_iterator.cc util/arena.cc util/bloom.cc util/cache.cc util/coding.cc util/comparator.cc util/crc32c.cc util/env.cc util/env_posix.cc util/filter_policy.cc util/hash.cc util/histogram.cc util/logging.cc util/options.cc util/status.cc  port/port_posix.cc -o libleveldb.dylib.1.14 
+ln -fs libleveldb.dylib.1.14 libleveldb.dylib
+ln -fs libleveldb.dylib.1.14 libleveldb.dylib.1
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/builder.cc -o db/builder.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/c.cc -o db/c.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/db_impl.cc -o db/db_impl.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/db_iter.cc -o db/db_iter.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/dbformat.cc -o db/dbformat.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/filename.cc -o db/filename.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/log_reader.cc -o db/log_reader.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/log_writer.cc -o db/log_writer.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/memtable.cc -o db/memtable.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/repair.cc -o db/repair.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/table_cache.cc -o db/table_cache.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/version_edit.cc -o db/version_edit.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/version_set.cc -o db/version_set.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c db/write_batch.cc -o db/write_batch.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/block.cc -o table/block.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/block_builder.cc -o table/block_builder.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/filter_block.cc -o table/filter_block.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/format.cc -o table/format.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/iterator.cc -o table/iterator.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/merger.cc -o table/merger.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/table.cc -o table/table.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/table_builder.cc -o table/table_builder.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c table/two_level_iterator.cc -o table/two_level_iterator.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/arena.cc -o util/arena.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/bloom.cc -o util/bloom.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/cache.cc -o util/cache.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/coding.cc -o util/coding.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/comparator.cc -o util/comparator.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/crc32c.cc -o util/crc32c.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/env.cc -o util/env.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/env_posix.cc -o util/env_posix.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/filter_policy.cc -o util/filter_policy.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/hash.cc -o util/hash.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/histogram.cc -o util/histogram.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/logging.cc -o util/logging.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/options.cc -o util/options.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c util/status.cc -o util/status.o
+c++ -I. -I./include -DOS_MACOSX -DLEVELDB_PLATFORM_POSIX -O2 -DNDEBUG        -c port/port_posix.cc -o port/port_posix.o
+rm -f libleveldb.a
+ar -rs libleveldb.a db/builder.o db/c.o db/db_impl.o db/db_iter.o db/dbformat.o db/filename.o db/log_reader.o db/log_writer.o db/memtable.o db/repair.o db/table_cache.o db/version_edit.o db/version_set.o db/write_batch.o table/block.o table/block_builder.o table/filter_block.o table/format.o table/iterator.o table/merger.o table/table.o table/table_builder.o table/two_level_iterator.o util/arena.o util/bloom.o util/cache.o util/coding.o util/comparator.o util/crc32c.o util/env.o util/env_posix.o util/filter_policy.o util/hash.o util/histogram.o util/logging.o util/options.o util/status.o port/port_posix.o
+ar: creating archive libleveldb.a

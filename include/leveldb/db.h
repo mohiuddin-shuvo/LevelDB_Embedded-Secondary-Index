@@ -41,8 +41,8 @@ struct Range {
  
 
 struct SKeyReturnVal {
-  Slice key;           
-  Slice value;
+  std::string key;           
+  std::string value;
   uint64_t sequence_number;
     static bool comp(const leveldb::SKeyReturnVal& a,const leveldb::SKeyReturnVal& b)
     {

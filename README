@@ -1,51 +1,74 @@
-leveldb: A key-value store
-Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
+leveldb_embedded_secondary-index: A key-value store on top of leveldb supporting secondary embedded indexing.
+Authors: Mohiuddin Abdul Qader (mabdu002@cs.ucr.edu)
+leveldb version: 1.14.0
 
 The code under this directory implements a system for maintaining a
-persistent key/value store.
+persistent key/value store with index support for secondary attribute based on bloom filter and implements a lookup interface for query on secondary attribute returning most recent k records. 
+Currently it supports indexing for only one secondary key.
 
-See doc/index.html for more explanation.
-See doc/impl.html for a brief overview of the implementation.
+Installation Tips: 
+After downloading the code, to compile it in mac/linux platform, enable the c++11 in your compiler. (ex. add "CXXFLAGS+=-g -std=c++11 -Wall -pedantic" in Makefile) 
 
-The public interface is in include/*.h.  Callers should not include or
-rely on the details of any other header files in this package.  Those
-internal APIs may be changed without warning.
+The Public APIs:
 
-Guide to header files:
+1. static Status Open(const Options& options, const std::string& name, DB** dbptr);
 
-include/db.h
-    Main interface to the DB: Start here
+This API creates/opens a database. The new addition to original leveldb option is that primary attribute and secondary attribute name has to be set in database options. The filterpolicy also must has to be set in options in order to enable secondary indexing.
+The new added fields in options:
 
-include/options.h
-    Control over the behavior of an entire database, and also
-    control over the behavior of individual reads and writes.
+Options
+{
+string secondaryAtt; 
+string PrimaryAtt;
+}
 
-include/comparator.h
-    Abstraction for user-specified comparison function.  If you want
-    just bytewise comparison of keys, you can use the default comparator,
-    but clients can write their own comparator implementations if they
-    want custom ordering (e.g. to handle different character
-    encodings, etc.)
 
-include/iterator.h
-    Interface for iterating over data. You can get an iterator
-    from a DB object.
+2. Status Put(const WriteOptions& o, const Slice& val);
 
-include/write_batch.h
-    Interface for atomically applying multiple updates to a database.
+This API writes a record in database. It will parse the the primary key and secondary key from the val argument by checking primary and secondary attribute that has been set when the database was created.
 
-include/slice.h
-    A simple module for maintaining a pointer and a length into some
-    other byte array.
 
-include/status.h
-    Status is returned from many of the public interfaces and is used
-    to report success and various kinds of errors.
+3. Status Delete(const WriteOptions& options, const Slice& key);
 
-include/env.h
-    Abstraction of the OS environment.  A posix implementation of
-    this interface is in util/env_posix.cc
+This API deletes a record from database with the specified primary key. This is same as original leveldb Delete API.
 
-include/table.h
-include/table_builder.h
-    Lower-level modules that most clients probably won't use directly
+4. Status Get(const ReadOptions& options, const Slice& key, std::string* value);
+
+This API reads a record from database with the specified primary key. This is same as original leveldb Get API.
+
+
+5. virtual Status Get(const ReadOptions& options, const Slice& skey, std::vector<SKeyReturnVal>* value, int kNoOfOutputs);
+
+This API is the new LOOKUP procedure which takes a secondary key and number of outputs K as input argument and return most recent top-K a record from database containing the specified secondary key.
+
+The return value SKeyReturnVal contains key, value and the sequence_number of the resulting records.
+
+struct SKeyReturnVal {
+  std:string key;           
+  std:string value;
+  uint64_t sequence_number;
+}
+
+
+Implementation Details:
+
+To support query on secondary keys, for each SSTable file, a set of Bloom filters is built on the secondary attributes, and appended as new meta block after the original filter meta block for primary key. Here, a Bloom
+filter bit-string is stored for each secondary attribute for each block
+As these Bloom filters are loaded in memory (the
+same approach is used currently with the Bloom filters of the primary key in systems like Cassandra and LevelDB), the scan
+over the disk files in converted to a scan over in-memory Bloom filters. It only accesses the disk blocks which the Bloom filter returns
+as positive. We refer to this index as Embedded Index as no separate
+data files are created, but instead the Bloom filters are embedded inside the main data files.
+
+For Lookup procedure (i.e. query on secondary keys), it first checks in memtable and then in sstable files level by level. 
+The scan on the sstable file blocks are decided by bloom filter on secondary attribute. If the bloom filter returns true for the query key for a particular block, it fetches the block to memory and scans the block if it contains the record containing the query key.
+
+Support top-K retrieval: 
+The lookup procedure scan one level at a time until K results have been found. LevelDB, as most other NoSQL systems, assigns an auto-increment
+sequence number to each entry at insertion, which is used to perform time ordering within a level. To efficiently compute the top-K entries, a min-heap
+is maintained ordered by the sequence number of a record. If we find a match and the record is valid and it is recent than the oldest record in the heap we insert the record in the heap.
+After finishing scan for one level, if the heapsize is K, then it performs heapsort and returns the top-K records. 
+
+See doc/index.html for more explanation on original leveldb.
+See doc/impl.html for a brief overview of the implementation of original leveldb.
+See doc/Header files.txt for the guide to header files.

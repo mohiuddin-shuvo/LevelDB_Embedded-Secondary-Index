@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="94">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df root="." name="0">
+      <df name="db">
+        <in>autocompact_test.cc</in>
+        <in>builder.cc</in>
+        <in>builder.h</in>
+        <in>c.cc</in>
+        <in>c_test.c</in>
+        <in>corruption_test.cc</in>
+        <in>db_bench.cc</in>
+        <in>db_impl.cc</in>
+        <in>db_impl.h</in>
+        <in>db_iter.cc</in>
+        <in>db_iter.h</in>
+        <in>db_test.cc</in>
+        <in>dbformat.cc</in>
+        <in>dbformat.h</in>
+        <in>dbformat_test.cc</in>
+        <in>filename.cc</in>
+        <in>filename.h</in>
+        <in>filename_test.cc</in>
+        <in>leveldb_main.cc</in>
+        <in>log_format.h</in>
+        <in>log_reader.cc</in>
+        <in>log_reader.h</in>
+        <in>log_test.cc</in>
+        <in>log_writer.cc</in>
+        <in>log_writer.h</in>
+        <in>memtable.cc</in>
+        <in>memtable.h</in>
+        <in>repair.cc</in>
+        <in>skiplist.h</in>
+        <in>skiplist_test.cc</in>
+        <in>snapshot.h</in>
+        <in>table_cache.cc</in>
+        <in>table_cache.h</in>
+        <in>version_edit.cc</in>
+        <in>version_edit.h</in>
+        <in>version_edit_test.cc</in>
+        <in>version_set.cc</in>
+        <in>version_set.h</in>
+        <in>version_set_test.cc</in>
+        <in>write_batch.cc</in>
+        <in>write_batch_internal.h</in>
+        <in>write_batch_test.cc</in>
+      </df>
+      <df name="doc">
+        <df name="bench">
+          <in>db_bench_sqlite3.cc</in>
+          <in>db_bench_tree_db.cc</in>
+        </df>
+        <in>writeSec.cpp</in>
+      </df>
+      <df name="helpers">
+        <df name="memenv">
+          <in>memenv.cc</in>
+          <in>memenv.h</in>
+          <in>memenv_test.cc</in>
+        </df>
+      </df>
+      <df name="include">
+        <df name="leveldb">
+          <in>c.h</in>
+          <in>cache.h</in>
+          <in>comparator.h</in>
+          <in>db.h</in>
+          <in>env.h</in>
+          <in>filter_policy.h</in>
+          <in>iterator.h</in>
+          <in>options.h</in>
+          <in>slice.h</in>
+          <in>status.h</in>
+          <in>table.h</in>
+          <in>table_builder.h</in>
+          <in>write_batch.h</in>
+        </df>
+        <df name="rapidjson">
+          <df name="internal">
+            <in>pow10.h</in>
+            <in>stack.h</in>
+            <in>strfunc.h</in>
+          </df>
+          <in>document.h</in>
+          <in>filestream.h</in>
+          <in>prettywriter.h</in>
+          <in>rapidjson.h</in>
+          <in>reader.h</in>
+          <in>stringbuffer.h</in>
+          <in>writer.h</in>
+        </df>
+      </df>
+      <df name="issues">
+        <in>issue178_test.cc</in>
+        <in>issue200_test.cc</in>
+      </df>
+      <df name="port">
+        <df name="win">
+          <in>stdint.h</in>
+        </df>
+        <in>atomic_pointer.h</in>
+        <in>port.h</in>
+        <in>port_example.h</in>
+        <in>port_posix.cc</in>
+        <in>port_posix.h</in>
+        <in>thread_annotations.h</in>
+      </df>
+      <df name="table">
+        <in>block.cc</in>
+        <in>block.h</in>
+        <in>block_builder.cc</in>
+        <in>block_builder.h</in>
+        <in>filter_block.cc</in>
+        <in>filter_block.h</in>
+        <in>filter_block_test.cc</in>
+        <in>format.cc</in>
+        <in>format.h</in>
+        <in>iterator.cc</in>
+        <in>iterator_wrapper.h</in>
+        <in>merger.cc</in>
+        <in>merger.h</in>
+        <in>table.cc</in>
+        <in>table_builder.cc</in>
+        <in>table_test.cc</in>
+        <in>two_level_iterator.cc</in>
+        <in>two_level_iterator.h</in>
+      </df>
+      <df name="util">
+        <in>arena.cc</in>
+        <in>arena.h</in>
+        <in>arena_test.cc</in>
+        <in>bloom.cc</in>
+        <in>bloom_test.cc</in>
+        <in>cache.cc</in>
+        <in>cache_test.cc</in>
+        <in>coding.cc</in>
+        <in>coding.h</in>
+        <in>coding_test.cc</in>
+        <in>comparator.cc</in>
+        <in>crc32c.cc</in>
+        <in>crc32c.h</in>
+        <in>crc32c_test.cc</in>
+        <in>env.cc</in>
+        <in>env_posix.cc</in>
+        <in>env_test.cc</in>
+        <in>filter_policy.cc</in>
+        <in>hash.cc</in>
+        <in>hash.h</in>
+        <in>histogram.cc</in>
+        <in>histogram.h</in>
+        <in>logging.cc</in>
+        <in>logging.h</in>
+        <in>mutexlock.h</in>
+        <in>options.cc</in>
+        <in>posix_logger.h</in>
+        <in>random.h</in>
+        <in>status.cc</in>
+        <in>testharness.cc</in>
+        <in>testharness.h</in>
+        <in>testutil.cc</in>
+        <in>testutil.h</in>
+      </df>
+    </df>
+  </logicalFolder>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <platform>2</platform>
+      </toolsSet>
+      <compile>
+        <compiledirpicklist>
+          <compiledirpicklistitem>.</compiledirpicklistitem>
+          <compiledirpicklistitem>${AUTO_FOLDER}</compiledirpicklistitem>
+        </compiledirpicklist>
+        <compiledir>${AUTO_FOLDER}</compiledir>
+        <compilecommandpicklist>
+          <compilecommandpicklistitem>${MAKE} ${ITEM_NAME}.o</compilecommandpicklistitem>
+          <compilecommandpicklistitem>${AUTO_COMPILE}</compilecommandpicklistitem>
+        </compilecommandpicklist>
+        <compilecommand>${AUTO_COMPILE}</compilecommand>
+      </compile>
+      <dbx_gdbdebugger version="1">
+        <gdb_pathmaps>
+        </gdb_pathmaps>
+        <gdb_interceptlist>
+          <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
+        </gdb_interceptlist>
+        <gdb_options>
+          <DebugOptions>
+          </DebugOptions>
+        </gdb_options>
+        <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
+      </dbx_gdbdebugger>
+      <nativedebugger version="1">
+        <engine>gdb</engine>
+      </nativedebugger>
+      <runprofile version="9">
+        <runcommandpicklist>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+        </runcommandpicklist>
+        <runcommand>"${OUTPUT_PATH}"</runcommand>
+        <rundir>/Users/nakshikatha/Desktop/leveldb_mod/.</rundir>
+        <buildfirst>false</buildfirst>
+        <terminal-type>0</terminal-type>
+        <remove-instrumentation>0</remove-instrumentation>
+        <environment>
+        </environment>
+      </runprofile>
+    </conf>
+  </confs>
+</configurationDescriptor>

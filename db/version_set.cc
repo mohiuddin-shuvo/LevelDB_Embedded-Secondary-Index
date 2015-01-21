@@ -297,6 +297,11 @@ static void SaveValue(void* arg, const Slice& ikey, const Slice& v) {
 }
 
 static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string secKey, int topKOutput, DBImpl* db) {
+    
+ // ofstream outputFile;
+  //outputFile.open("/home/mohiuddin/Desktop/TestDB/debug.txt" ,std::ofstream::out | std::ofstream::app);
+      
+    
   SecSaver* s = reinterpret_cast<SecSaver*>(arg);
              
   ParsedInternalKey parsed_key;
@@ -372,12 +377,14 @@ static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string se
         
         struct SKeyReturnVal newVal;
         Slice ukey = ExtractUserKey(ikey);
+        
+        //outputFile<<ikey.ToString()<<ukey.ToString()<<endl<<val<<endl;
         if(s->resultSetofKeysFound->find(ukey.ToString())==s->resultSetofKeysFound->end())
         {
          
-            const char* p = ukey.data();
+            //const char* p = ukey.data();
 
-            char *d;
+            //char *d;
             /*
             if(ikey.size()-7>0)
             {
@@ -389,20 +396,20 @@ static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string se
                 newVal.key = Slice(d);
             }*/
 
-            d = new char[ukey.size()+1];
-            memcpy( d, p, ukey.size() );
-            d[ukey.size()] = '\0';
+            //d = new char[ukey.size()+1];
+            //memcpy( d, p, ukey.size() );
+            //d[ukey.size()] = '\0';
                 //std::strcpy(d,p);
-            newVal.key = Slice(d);
-            char *d2;
-            d2 = new char[val.size()+1];
-            const char *t = val.c_str();
-            memcpy( d2, t, val.size());
-            d2[val.size()] = '\0';
+            newVal.key = ukey.ToString();//Slice(d);
+            //char *d2;
+            //d2 = new char[val.size()+1];
+            //const char *t = val.c_str();
+            //memcpy( d2, t, val.size());
+            //d2[val.size()] = '\0';
             //std::strcpy(d2,val.c_str());
 
             //Slice(block_iter->key().data(),block_iter->key().size());//entry;
-            newVal.value = Slice(d2); 
+            newVal.value = val;//Slice(d2); 
             //const char* entry = ikey.data();
             
             //newVal.value = Slice(d2);
@@ -415,7 +422,7 @@ static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string se
             if(s->value->size()<topKOutput)
             {
                 Status st = db->Get(leveldb::ReadOptions(),newVal.key, &temp);
-                if(st.ok()&&!st.IsNotFound()&&temp==newVal.value.ToString())
+                if(st.ok()&&!st.IsNotFound()&&temp==newVal.value)
                 {
                         newVal.Push(s->value, newVal);
                         s->resultSetofKeysFound->insert(ukey.ToString());
@@ -424,11 +431,12 @@ static bool SecSaveValue(void* arg, const Slice& ikey, const Slice& v, string se
             else if(newVal.sequence_number>s->value->front().sequence_number)
             {
                 Status st = db->Get(leveldb::ReadOptions(),newVal.key, &temp);
-                if(st.ok()&&!st.IsNotFound()&&temp==newVal.value.ToString())
+                if(st.ok()&&!st.IsNotFound()&&temp==newVal.value)
                 {
                     newVal.Pop(s->value);
                     newVal.Push(s->value,newVal);
                     s->resultSetofKeysFound->insert(ukey.ToString());
+                    s->resultSetofKeysFound->erase(s->resultSetofKeysFound->find(s->value->front().key));
                 }
             }
             
@@ -601,7 +609,7 @@ Status Version::Get(const ReadOptions& options,
                     GetStats* stats, string secKey, int kNoOfOutputs,std::unordered_set<std::string>* resultSetofKeysFound, DBImpl* db) {
     
     //ofstream outputFile;
-    //outputFile.open("/Users/nakshikatha/Desktop/test codes/debug2.txt");
+    //outputFile.open("/home/mohiuddin/Desktop/TestDB/debug.txt" ,std::ofstream::out | std::ofstream::app);
     
     //outputFile<<"in\n";
     
