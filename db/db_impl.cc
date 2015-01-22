@@ -37,6 +37,8 @@
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include "cpp-btree/btree_map.h"
+
 
 namespace leveldb {
 
@@ -130,7 +132,8 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       db_lock_(NULL),
       shutting_down_(NULL),
       bg_cv_(&mutex_),
-      mem_(new MemTable(internal_comparator_)),
+      //SECONDARY MEMTABLE
+      mem_(new MemTable(internal_comparator_, raw_options.secondaryAtt)),
       imm_(NULL),
       logfile_(NULL),
       logfile_number_(0),
@@ -416,7 +419,8 @@ Status DBImpl::RecoverLogFile(uint64_t log_number,
     WriteBatchInternal::SetContents(&batch, record);
 
     if (mem == NULL) {
-      mem = new MemTable(internal_comparator_);
+      //SECONDARY MEMTABLE
+      mem = new MemTable(internal_comparator_, this->options_.secondaryAtt);
       mem->Ref();
     }
     status = WriteBatchInternal::InsertInto(&batch, mem);
@@ -1161,9 +1165,9 @@ Status DBImpl::Get(const ReadOptions& options,
     //outputFile<<"in\n";
     
     std::unordered_set<std::string> resultSetofKeysFound;
-    
+     //SECONDARY MEMTABLE
     //outputFile<<"memGet\n";
-    mem->Get(lkey, value, &s,this->options_.secondaryAtt,&resultSetofKeysFound , kNoOfOutputs, this) ;
+    mem->Get(skey, snapshot, value, &s ,&resultSetofKeysFound , kNoOfOutputs) ;
     
     //if(value->size()>kNoOfOutputs)
     //std::sort(value->begin(), value->end(), NewestFirst);
@@ -1172,7 +1176,8 @@ Status DBImpl::Get(const ReadOptions& options,
     if(imm != NULL && kNoOfOutputs-value->size()>0) {
       //outputFile<<"immGet\n";  
       int memsize = value->size(); 
-      imm->Get(lkey, value, &s,this->options_.secondaryAtt,&resultSetofKeysFound,kNoOfOutputs, this);
+      //SECONDARY MEMTABLE
+      imm->Get(skey, snapshot, value, &s ,&resultSetofKeysFound , kNoOfOutputs) ;
       //if(value->size()>kNoOfOutputs)
        // std::sort(value->begin()+memsize, value->end(), NewestFirst);
     
@@ -1184,15 +1189,7 @@ Status DBImpl::Get(const ReadOptions& options,
         s = current->Get(options, lkey, value, &stats,this->options_.secondaryAtt,kNoOfOutputs,&resultSetofKeysFound,this);
         //outputFile<<"in\n";
     }
-    //outputFile<<kNoOfOutputs;
-    //outputFile<<value->size()<<endl;
-      //have_stat_update = true;
-     /*if(kNoOfOutputs<value->size())
-     {
-         //outputFile<<value->size()<<endl;
-         value->erase(value->begin()+kNoOfOutputs,value->end());
-         //outputFile<<value->size()<<endl;
-     }*/
+     
     
     std::sort_heap(value->begin(),value->end(),NewestFirst);
     //outputFile<<"in\n";
@@ -1486,7 +1483,8 @@ Status DBImpl::MakeRoomForWrite(bool force) {
       log_ = new log::Writer(lfile);
       imm_ = mem_;
       has_imm_.Release_Store(imm_);
-      mem_ = new MemTable(internal_comparator_);
+      //SECONDARY MEMTABLE
+      mem_ = new MemTable(internal_comparator_, this->options_.secondaryAtt);
       mem_->Ref();
       force = false;   // Do not force another compaction if have room
       MaybeScheduleCompaction();

@@ -12,6 +12,7 @@
 #include "db/skiplist.h"
 #include "util/arena.h"
 #include "db/db_impl.h"
+#include "cpp-btree/btree_map.h"
 
 namespace leveldb {
 
@@ -23,7 +24,7 @@ class MemTable {
  public:
   // MemTables are reference counted.  The initial reference count
   // is zero and the caller must call Ref() at least once.
-  explicit MemTable(const InternalKeyComparator& comparator);
+  explicit MemTable(const InternalKeyComparator& comparator, std::string secAtt);
 
   // Increase reference count.
   void Ref() { ++refs_; }
@@ -66,7 +67,9 @@ class MemTable {
   bool Get(const LookupKey& key, std::string* value, Status* s);
 
   //Overload Get mothod for returning the list of key,value pairs for query on sec key
-  bool Get(const LookupKey& skey, std::vector<SKeyReturnVal>* value, Status* s, std::string secKey, std::unordered_set<std::string>* resultSetofKeysFound, int topKOutput,DBImpl* db);
+ //SECONDARY MEMTABLE
+  bool Get(const LookupKey& key, std::string* value, Status* s,uint64_t *tag);
+  void Get(const Slice& skey, SequenceNumber snapshot, std::vector<SKeyReturnVal>* value, Status* s,   std::unordered_set<std::string>* resultSetofKeysFound, int topKOutput);
 
   
  private:
@@ -87,6 +90,11 @@ class MemTable {
   Arena arena_;
   Table table_;
 
+  //SECONDARY MEMTABLE
+  typedef btree::btree_map<string, vector<string>* > SecMemTable;
+  SecMemTable secTable_;
+  std::string secAttribute;
+  
   // No copying allowed
   MemTable(const MemTable&);
   void operator=(const MemTable&);
