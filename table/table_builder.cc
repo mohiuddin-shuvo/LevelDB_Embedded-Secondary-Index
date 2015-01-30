@@ -99,8 +99,8 @@ Status TableBuilder::ChangeOptions(const Options& options) {
 }
 
 void TableBuilder::Add(const Slice& key, const Slice& value) {
-    std::ofstream outputFile;
-    outputFile.open("/Users/nakshikatha/Desktop/test codes/add.txt",std::ofstream::out | std::ofstream::app);
+    //std::ofstream outputFile;
+    //outputFile.open("/Users/nakshikatha/Desktop/test codes/add.txt",std::ofstream::out | std::ofstream::app);
     //outputFile<<"inside Add\n";
   Rep* r = rep_;
   assert(!r->closed);
