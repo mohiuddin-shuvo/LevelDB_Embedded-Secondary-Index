@@ -132,8 +132,17 @@ if (r->secondary_filter_block != NULL&&!r->options.secondaryAtt.empty()) {
   const char* sKeyAtt = r->options.secondaryAtt.c_str();
   
   if(!docToParse.IsObject()||!docToParse.HasMember(sKeyAtt)||docToParse[sKeyAtt].IsNull())
+  {
+      r->last_key.assign(key.data(), key.size());
+        r->num_entries++;
+        r->data_block.Add(key, value);
+
+        const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
+        if (estimated_block_size >= r->options.block_size) {
+          Flush();
+        }
       return;
-  
+  }
   std::ostringstream sKey;
   if(docToParse[sKeyAtt].IsNumber())
   {
